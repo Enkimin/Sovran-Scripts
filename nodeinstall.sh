@@ -128,25 +128,17 @@ download_and_verify_bitcoin_core() {
     exit 1
   fi
 
-  # Construct the URLs for the latest version
-  local file_name="bitcoin-$latest_version.tar.gz"
-  local signature="bitcoin-$latest_version.tar.gz.asc"
+  # Clone the Bitcoin Core repository from GitHub
+  echo "Cloning Bitcoin Core repository..."
+  git clone --depth 1 --branch "$latest_version" https://github.com/bitcoin/bitcoin.git "$node_folder/bitcoin-$latest_version"
 
-  # Download the latest version of Bitcoin Core and the corresponding signature
-  echo "Downloading Bitcoin Core version $latest_version..."
-  wget "https://bitcoincore.org/bin/bitcoin-core-$latest_version/$file_name" -P "$node_folder"
-  wget "https://bitcoincore.org/bin/bitcoin-core-$latest_version/$signature" -P "$node_folder"
-
-  # Verify the downloaded file using GPG signature (same as in your original script)
+  # Verify the downloaded source code using GPG signature (same as in your original script)
   echo "Verifying the downloaded Bitcoin Core..."
   gpg --keyserver keyserver.ubuntu.com --recv-keys 01EA5486DE18A882D4C2684590C8019E36C2E964
-  gpg --verify "$node_folder/$signature" "$node_folder/$file_name" | grep -q "Good signature from" || (echo "Verification of Bitcoin Core failed. Aborting the installation." && exit 1)
+  gpg --verify "$node_folder/bitcoin-$latest_version/contrib/signatures/laanwj-releases.asc" "$node_folder/bitcoin-$latest_version/contrib/verifybinaries/README.md" | grep -q "Good signature from" || (echo "Verification of Bitcoin Core failed. Aborting the installation." && exit 1)
 
-  # Extract the downloaded tarball and navigate into the extracted folder
-  echo "Extracting Bitcoin Core..."
-  tar -xzf "$node_folder/$file_name" -C "$node_folder"
-  local extracted_folder=$(tar -tzf "$node_folder/$file_name" | head -1)
-  cd "$node_folder/$extracted_folder" || (echo "Failed to enter the Bitcoin Core directory. Aborting the installation." && exit 1)
+  # Navigate into the Bitcoin Core directory
+  cd "$node_folder/bitcoin-$latest_version" || (echo "Failed to enter the Bitcoin Core directory. Aborting the installation." && exit 1)
 
   # Build and install Bitcoin Core
   echo "Building Bitcoin Core..."
