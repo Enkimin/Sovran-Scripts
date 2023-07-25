@@ -120,21 +120,33 @@ download_and_verify_bitcoin_core() {
   # Create the node folder if it doesn't exist
   mkdir -p "$node_folder"
 
-  # Download the latest version of Bitcoin Core and the SHA256SUMS file
+  # Fetch the latest version number from the GitHub API
   echo "Fetching the latest version of Bitcoin Core..."
-  latest_version=$(curl -s https://bitcoincore.org/en/download/ | grep -oP 'bitcoin-[0-9]+\.[0-9]+\.[0-9]+.tar.gz' | tail -1)
-  wget "https://bitcoincore.org/bin/$latest_version" -P "$node_folder"
-  wget "https://bitcoincore.org/bin/$latest_version.asc" -P "$node_folder"
+  latest_version=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+  if [[ -z "$latest_version" ]]; then
+    echo "Failed to fetch the latest version of Bitcoin Core. Aborting the installation."
+    exit 1
+  fi
 
-  # Verify the downloaded file using GPG signature
+  # Construct the URLs for the latest version
+  local file_name="bitcoin-$latest_version.tar.gz"
+  local signature="bitcoin-$latest_version.tar.gz.asc"
+
+  # Download the latest version of Bitcoin Core and the corresponding signature
+  echo "Downloading Bitcoin Core version $latest_version..."
+  wget "https://bitcoincore.org/bin/bitcoin-core-$latest_version/$file_name" -P "$node_folder"
+  wget "https://bitcoincore.org/bin/bitcoin-core-$latest_version/$signature" -P "$node_folder"
+
+  # Verify the downloaded file using GPG signature (same as in your original script)
   echo "Verifying the downloaded Bitcoin Core..."
   gpg --keyserver keyserver.ubuntu.com --recv-keys 01EA5486DE18A882D4C2684590C8019E36C2E964
-  gpg --verify "$node_folder/$latest_version.asc" "$node_folder/$latest_version" | grep -q "Good signature from" || (echo "Verification of Bitcoin Core failed. Aborting the installation." && exit 1)
+  gpg --verify "$node_folder/$signature" "$node_folder/$file_name" | grep -q "Good signature from" || (echo "Verification of Bitcoin Core failed. Aborting the installation." && exit 1)
 
   # Extract the downloaded tarball and navigate into the extracted folder
   echo "Extracting Bitcoin Core..."
-  tar -xzf "$node_folder/$latest_version" -C "$node_folder"
-  cd "$node_folder/bitcoin-*" || (echo "Failed to enter the Bitcoin Core directory. Aborting the installation." && exit 1)
+  tar -xzf "$node_folder/$file_name" -C "$node_folder"
+  local extracted_folder=$(tar -tzf "$node_folder/$file_name" | head -1)
+  cd "$node_folder/$extracted_folder" || (echo "Failed to enter the Bitcoin Core directory. Aborting the installation." && exit 1)
 
   # Build and install Bitcoin Core
   echo "Building Bitcoin Core..."
@@ -251,6 +263,12 @@ if [ "$EUID" -ne 0 ]; then
   echo "Please run this script as root."
   exit 1
 fi
+
+# Create a new user named "bitcoin" and set the password
+echo "Creating a new user named 'bitcoin'..."
+adduser --disabled-password --gecos "" bitcoin
+echo "Please set the password for the 'bitcoin' user:"
+passwd bitcoin
 
 # Custom ASCII art welcome message
 cat << "EOF"
