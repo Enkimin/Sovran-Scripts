@@ -5,6 +5,34 @@ is_package_installed() {
   dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "installed"
 }
 
+# Function to prompt the user with a yes/no question and return their choice
+prompt_yes_no() {
+  local question="$1"
+  local default_choice="${2:-yes}"
+
+  while true; do
+    read -p "$question (y/n) [default: $default_choice]: " user_choice
+    case $user_choice in
+      [Yy]*)
+        echo "yes"
+        return
+        ;;
+      [Nn]*)
+        echo "no"
+        return
+        ;;
+      "")
+        # If the user just presses Enter, return the default choice
+        echo "$default_choice"
+        return
+        ;;
+      *)
+        echo "Invalid choice. Please enter 'y' for yes or 'n' for no."
+        ;;
+    esac
+  done
+}
+
 # Function to install TOR
 install_tor() {
   # Add TOR repository
