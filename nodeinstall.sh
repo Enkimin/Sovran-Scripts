@@ -113,8 +113,8 @@ install_bitcoin_core_dependencies() {
   apt install -y build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev libboost-thread-dev libboost-all-dev libzmq3-dev
 }
 
-# Function to download and verify Bitcoin Core in the /home/bitcoin/node/ folder and build it
-download_and_verify_bitcoin_core() {
+# Function to download and install Bitcoin Core in the /home/bitcoin/node/ folder
+download_and_install_bitcoin_core() {
   local node_folder="/home/bitcoin/node"
 
   # Create the node folder if it doesn't exist
@@ -124,19 +124,13 @@ download_and_verify_bitcoin_core() {
   echo "Fetching the latest version of Bitcoin Core..."
   latest_version=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
   if [[ -z "$latest_version" ]]; then
-    echo "Failed to fetch the latest version of Bitcoin Core. Aborting the installation."
     exit 1
   fi
 
   # Clone the Bitcoin Core repository from GitHub
   echo "Cloning Bitcoin Core repository..."
   git clone --depth 1 --branch "$latest_version" https://github.com/bitcoin/bitcoin.git "$node_folder/bitcoin-$latest_version"
-
-  # Verify the downloaded source code using GPG signature (same as in your original script)
-  echo "Verifying the downloaded Bitcoin Core..."
-  gpg --keyserver keyserver.ubuntu.com --recv-keys 01EA5486DE18A882D4C2684590C8019E36C2E964
-  gpg --verify "$node_folder/bitcoin-$latest_version/contrib/signatures/laanwj-releases.asc" "$node_folder/bitcoin-$latest_version/contrib/verifybinaries/README.md" | grep -q "Good signature from" || (echo "Verification of Bitcoin Core failed. Aborting the installation." && exit 1)
-
+  
   # Navigate into the Bitcoin Core directory
   cd "$node_folder/bitcoin-$latest_version" || (echo "Failed to enter the Bitcoin Core directory. Aborting the installation." && exit 1)
 
@@ -154,6 +148,7 @@ download_and_verify_bitcoin_core() {
 
   echo "Bitcoin Core installation completed successfully!"
 }
+
 
 configure_bitcoin_core() {
   local bitcoin_conf_file="/home/bitcoin/.bitcoin/bitcoin.conf"
@@ -218,8 +213,8 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-User=root
-Group=root
+User=bitcoin
+Group=bitcoin
 Type=forking
 ExecStart=/usr/local/bin/bitcoind  \
                          -conf=/root/.bitcoin/bitcoin.conf \
@@ -256,12 +251,6 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# Create a new user named "bitcoin" and set the password
-echo "Creating a new user named 'bitcoin'..."
-adduser --disabled-password --gecos "" bitcoin
-echo "Please set the password for the 'bitcoin' user:"
-passwd bitcoin
-
 # Custom ASCII art welcome message
 cat << "EOF"
 !   .::::::.     ...     :::      .::.:::::::..     :::.     :::.    :::.    :::.    :::.    ...     :::::::-.  .,::::::      ::::::::::.   :::.       .,-:::::   :::  .
@@ -281,6 +270,12 @@ echo "To continue, hit any key."
 read -n 1 -s -r -p "Press any key to continue..."
 
 echo -e "\n"
+
+# Create a new user named "bitcoin" and set the password
+echo "Creating a new user named 'bitcoin'..."
+adduser --disabled-password --gecos "" bitcoin
+echo "Please set the password for the 'bitcoin' user:"
+passwd bitcoin
  
 # Prompt the user if they want to install TOR
 if [ "$(prompt_yes_no 'Do you want to install TOR?')" == "yes" ]; then
