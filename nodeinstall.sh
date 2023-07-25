@@ -174,6 +174,47 @@ EOF
   echo "Bitcoin Core has been successfully configured."
 }
 
+# Function to create systemd service unit for Bitcoin Core
+create_bitcoin_core_service() {
+  local service_file="/etc/systemd/system/bitcoind.service"
+
+  cat <<EOF >"$service_file"
+[Unit]
+Description=Bitcoin daemon
+
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=root
+Group=root
+Type=forking
+ExecStart=/usr/local/bin/bitcoind  \
+                         -conf=/root/.bitcoin/bitcoin.conf \
+                         -pid=/run/bitcoind.pid
+
+
+Restart=always
+PrivateTmp=true
+TimeoutStopSec=480s
+TimeoutStartSec=480s
+StartLimitInterval=480s
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  echo "Bitcoin Core systemd service unit created."
+}
+
+# Function to start and enable Bitcoin Core service
+start_and_enable_bitcoin_core() {
+  systemctl start bitcoind
+  systemctl enable bitcoind
+  echo "Bitcoin Core has been started and enabled as a systemd service."
+}
+
 # Main script starts here
 
 
@@ -217,6 +258,7 @@ else
   echo "I2P installation skipped."
 fi
 
+# Inform the user before proceeding to Bitcoin Core installation
 echo "Moving on to Bitcoin Core installation..."
 
 # Install required repositories for Bitcoin Core
@@ -236,6 +278,17 @@ if [[ "$install_tor_choice" == "yes" || "$install_i2p_choice" == "yes" ]]; then
 else
   configure_bitcoin_core "no"
 fi
+
+echo "Bitcoin Core has been successfully installed and configured."
+
+# Create systemd service unit for Bitcoin Core
+create_bitcoin_core_service
+
+# Reload the systemd daemon to recognize the new service
+systemctl daemon-reload
+
+# Start and enable Bitcoin Core service
+start_and_enable_bitcoin_core
 
 echo "Bitcoin Core has been successfully installed and configured."
 
