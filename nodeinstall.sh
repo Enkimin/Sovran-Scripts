@@ -81,6 +81,7 @@ install_i2p() {
   fi
 
   echo "Installing I2P..."
+  apt update 
   apt install -y i2p
 
   # Start the I2P service
@@ -272,7 +273,7 @@ read -n 1 -s -r -p "Press any key to continue..."
 echo -e "\n"
 
 # Create a new user named "bitcoin" and set the password
-echo "Creating a new user named 'bitcoin'..."
+echo "Creating a new user named 'bitcoin' please choose a password and remember it..."
 adduser --disabled-password --gecos "" bitcoin
 echo "Please set the password for the 'bitcoin' user:"
 passwd bitcoin
