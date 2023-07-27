@@ -2,166 +2,165 @@
 
 # Function to check if a package is installed
 is_package_installed() {
-  dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "installed"
+    dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "installed"
 }
 
 # Function to prompt the user with a yes/no question and return their choice
 prompt_yes_no() {
-  local question="$1"
-  local default_choice="${2:-yes}"
+    local question="$1"
+    local default_choice="${2:-yes}"
 
-  while true; do
-    read -p "$question (y/n) [default: $default_choice]: " user_choice
-    case $user_choice in
-      [Yy]*)
-        echo "yes"
-        return
-        ;;
-      [Nn]*)
-        echo "no"
-        return
-        ;;
-      "")
-        # If the user just presses Enter, return the default choice
-        echo "$default_choice"
-        return
-        ;;
-      *)
-        echo "Invalid choice. Please enter 'y' for yes or 'n' for no."
-        ;;
-    esac
-  done
+    while true; do
+        read -p "$question (y/n) [default: $default_choice]: " user_choice
+        case $user_choice in
+        [Yy]*)
+            echo "yes"
+            return
+            ;;
+        [Nn]*)
+            echo "no"
+            return
+            ;;
+        "")
+            # If the user just presses Enter, return the default choice
+            echo "$default_choice"
+            return
+            ;;
+        *)
+            echo "Invalid choice. Please enter 'y' for yes or 'n' for no."
+            ;;
+        esac
+    done
 }
 
 # Function to install TOR
 install_tor() {
-  # Add TOR repository
-  echo "deb http://deb.torproject.org/torproject.org $(lsb_release -cs) main" >> /etc/apt/sources.list.d/tor.list
-  gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
-  gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
+    # Add TOR repository
+    echo "deb http://deb.torproject.org/torproject.org $(lsb_release -cs) main" >>/etc/apt/sources.list.d/tor.list
+    gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
+    gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
 
-  # Update package lists with the new repository
-  echo "Updating system with the new repository..."
-  apt update
+    # Update package lists with the new repository
+    echo "Updating system with the new repository..."
+    apt update
 
-  # Install TOR
-  echo "Installing TOR..."
-  apt install -y tor
+    # Install TOR
+    echo "Installing TOR..."
+    apt install -y tor
 
-  # Additional dependencies for TOR (you can add more if required)
-  echo "Installing additional dependencies for TOR..."
-  apt install -y torsocks
-  apt install -y tor-geoipdb
+    # Additional dependencies for TOR (you can add more if required)
+    echo "Installing additional dependencies for TOR..."
+    apt install -y torsocks
+    apt install -y tor-geoipdb
 
-  # Add the user "bitcoin" to the "debian-tor" group to allow TOR access
-  usermod -a -G debian-tor bitcoin
+    # Add the user "bitcoin" to the "debian-tor" group to allow TOR access
+    usermod -a -G debian-tor bitcoin
 
-  # Set correct permissions for the TOR configuration directory
-  chown -R debian-tor:debian-tor /var/lib/tor
+    # Set correct permissions for the TOR configuration directory
+    chown -R debian-tor:debian-tor /var/lib/tor
 
-  # Add custom configurations to the torrc file
-  echo -e "ControlPort 9051\nCookieAuthentication 1\nCookieAuthFileGroupReadable 1\nLog notice stdout\nSOCKSPort 9050" >> /etc/tor/torrc
+    # Add custom configurations to the torrc file
+    echo -e "ControlPort 9051\nCookieAuthentication 1\nCookieAuthFileGroupReadable 1\nLog notice stdout\nSOCKSPort 9050" >>/etc/tor/torrc
 
-  # Restart TOR for changes to take effect
-  service tor restart
+    # Restart TOR for changes to take effect
+    service tor restart
 }
 
 # Function to install I2P
 install_i2p() {
-  # Add I2P repository
-  echo "Adding I2P repository..."
-  wget -q -O - https://repo.i2pd.xyz/.help/add_repo | sudo bash -s -
+    # Add I2P repository
+    echo "Adding I2P repository..."
+    wget -q -O - https://repo.i2pd.xyz/.help/add_repo | sudo bash -s -
 
-  # Check if apt-transport-https is installed and install it if not
-  if ! is_package_installed "apt-transport-https"; then
-    echo "Installing apt-transport-https..."
-    apt install -y apt-transport-https
-  else
-    echo "apt-transport-https is already installed."
-  fi
+    # Check if apt-transport-https is installed and install it if not
+    if ! is_package_installed "apt-transport-https"; then
+        echo "Installing apt-transport-https..."
+        apt install -y apt-transport-https
+    else
+        echo "apt-transport-https is already installed."
+    fi
 
-  echo "Installing I2P..."
-  apt update 
-  apt install -y i2p
+    echo "Installing I2P..."
+    apt update
+    apt install -y i2p
 
-  # Start the I2P service
-  service i2p start
+    # Start the I2P service
+    service i2p start
 
-  # Enable I2Pd's web console
-  enable_i2pd_web_console
+    # Enable I2Pd's web console
+    enable_i2pd_web_console
 }
 
 # Function to enable I2Pd's web console
 enable_i2pd_web_console() {
-  # Comment out existing http section entries
-  sed -i 's/^http.address =/#http.address =/' /var/lib/i2p/i2p-config
-  sed -i 's/^http.port =/#http.port =/' /var/lib/i2p/i2p-config
-  sed -i 's/^http.auth =/#http.auth =/' /var/lib/i2p/i2p-config
+    # Comment out existing http section entries
+    sed -i 's/^http.address =/#http.address =/' /var/lib/i2p/i2p-config
+    sed -i 's/^http.port =/#http.port =/' /var/lib/i2p/i2p-config
+    sed -i 's/^http.auth =/#http.auth =/' /var/lib/i2p/i2p-config
 
-  # Add new settings for http section
-  echo "http.address=127.0.0.1" >> /var/lib/i2p/i2p-config
-  echo "http.port=7070" >> /var/lib/i2p/i2p-config
-  echo "http.auth=true" >> /var/lib/i2p/i2p-config
-  echo "http.user=bitcoin" >> /var/lib/i2p/i2p-config
-  echo "http.pass=bitcoin" >> /var/lib/i2p/i2p-config
+    # Add new settings for http section
+    echo "http.address=127.0.0.1" >>/var/lib/i2p/i2p-config
+    echo "http.port=7070" >>/var/lib/i2p/i2p-config
+    echo "http.auth=true" >>/var/lib/i2p/i2p-config
+    echo "http.user=bitcoin" >>/var/lib/i2p/i2p-config
+    echo "http.pass=bitcoin" >>/var/lib/i2p/i2p-config
 
-  echo "I2Pd web console enabled successfully."
+    echo "I2Pd web console enabled successfully."
 }
 
 # Function to install required repositories for Bitcoin Core
 install_bitcoin_core_dependencies() {
-  echo "Installing required repositories for Bitcoin Core..."
-  apt install -y build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev libboost-thread-dev libboost-all-dev libzmq3-dev
+    echo "Installing required repositories for Bitcoin Core..."
+    apt install -y build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev libboost-thread-dev libboost-all-dev libzmq3-dev
 }
 
 # Function to download and install Bitcoin Core in the /home/bitcoin/node/ folder
 download_and_install_bitcoin_core() {
-  local node_folder="/home/bitcoin/node"
+    local node_folder="/home/bitcoin/node"
 
-  # Create the node folder if it doesn't exist
-  mkdir -p "$node_folder"
+    # Create the node folder if it doesn't exist
+    mkdir -p "$node_folder"
 
-  # Fetch the latest version number from the GitHub API
-  echo "Fetching the latest version of Bitcoin Core..."
-  latest_version=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-  if [[ -z "$latest_version" ]]; then
-    exit 1
-  fi
+    # Fetch the latest version number from the GitHub API
+    echo "Fetching the latest version of Bitcoin Core..."
+    latest_version=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+    if [[ -z "$latest_version" ]]; then
+        exit 1
+    fi
 
-  # Clone the Bitcoin Core repository from GitHub
-  echo "Cloning Bitcoin Core repository..."
-  git clone --depth 1 --branch "$latest_version" https://github.com/bitcoin/bitcoin.git "$node_folder/bitcoin-$latest_version"
-  
-  # Navigate into the Bitcoin Core directory
-  cd "$node_folder/bitcoin-$latest_version" || (echo "Failed to enter the Bitcoin Core directory. Aborting the installation." && exit 1)
+    # Clone the Bitcoin Core repository from GitHub
+    echo "Cloning Bitcoin Core repository..."
+    git clone --depth 1 --branch "$latest_version" https://github.com/bitcoin/bitcoin.git "$node_folder/bitcoin-$latest_version"
 
-  # Build and install Bitcoin Core
-  echo "Building Bitcoin Core..."
-  ./autogen.sh
-  ./configure
-  make
+    # Navigate into the Bitcoin Core directory
+    cd "$node_folder/bitcoin-$latest_version" || (echo "Failed to enter the Bitcoin Core directory. Aborting the installation." && exit 1)
 
-  # Inform the user about the time-consuming installation step
-  echo "Building is complete. Now installing Bitcoin Core. This might take a while. Go outside, touch grass, and come back!"
+    # Build and install Bitcoin Core
+    echo "Building Bitcoin Core..."
+    ./autogen.sh
+    ./configure
+    make
 
-  # Run the make install step
-  make install
+    # Inform the user about the time-consuming installation step
+    echo "Building is complete. Now installing Bitcoin Core. This might take a while. Go outside, touch grass, and come back!"
 
-  echo "Bitcoin Core installation completed successfully!"
+    # Run the make install step
+    make install
+
+    echo "Bitcoin Core installation completed successfully!"
 }
 
-
 configure_bitcoin_core() {
-  local bitcoin_conf_file="/home/bitcoin/.bitcoin/bitcoin.conf"
-  local use_tor_and_i2p_mode="$1"
+    local bitcoin_conf_file="/home/bitcoin/.bitcoin/bitcoin.conf"
+    local use_tor_and_i2p_mode="$1"
 
-  echo "Configuring Bitcoin Core..."
+    echo "Configuring Bitcoin Core..."
 
-  # Create .bitcoin folder in the user's home directory
-  mkdir -p "/home/bitcoin/.bitcoin"
+    # Create .bitcoin folder in the user's home directory
+    mkdir -p "/home/bitcoin/.bitcoin"
 
-  # Write the appropriate configuration to the bitcoin.conf file
-  cat <<EOF >"$bitcoin_conf_file"
+    # Write the appropriate configuration to the bitcoin.conf file
+    cat <<EOF >"$bitcoin_conf_file"
 # [core]
 coinstatsindex=1
 daemon=1
@@ -181,32 +180,32 @@ debug=i2p
 # [NETWORK]
 EOF
 
-  if [[ "$use_tor_and_i2p_mode" == "yes" ]]; then
-    cat <<EOF >>"$bitcoin_conf_file"
+    if [[ "$use_tor_and_i2p_mode" == "yes" ]]; then
+        cat <<EOF >>"$bitcoin_conf_file"
 onlynet=onion,i2p
 proxy=127.0.0.1:9050
 i2psam=127.0.0.1:7656
 EOF
-  elif [[ "$install_tor_choice" == "yes" ]]; then
-    cat <<EOF >>"$bitcoin_conf_file"
+    elif [[ "$install_tor_choice" == "yes" ]]; then
+        cat <<EOF >>"$bitcoin_conf_file"
 
 proxy=127.0.0.1:9050
 EOF
-  elif [[ "$install_i2p_choice" == "yes" ]]; then
-    cat <<EOF >>"$bitcoin_conf_file"
+    elif [[ "$install_i2p_choice" == "yes" ]]; then
+        cat <<EOF >>"$bitcoin_conf_file"
 
 i2psam=127.0.0.1:7656
 EOF
-  fi
+    fi
 
-  echo "Bitcoin Core has been successfully configured."
+    echo "Bitcoin Core has been successfully configured."
 }
 
 # Function to create systemd service unit for Bitcoin Core
 create_bitcoin_core_service() {
-  local service_file="/etc/systemd/system/bitcoind.service"
+    local service_file="/etc/systemd/system/bitcoind.service"
 
-  cat <<EOF >"$service_file"
+    cat <<EOF >"$service_file"
 [Unit]
 Description=Bitcoin daemon
 
@@ -218,8 +217,8 @@ User=bitcoin
 Group=bitcoin
 Type=forking
 ExecStart=/usr/local/bin/bitcoind  \
-                         -conf=/root/.bitcoin/bitcoin.conf \
-                         -pid=/run/bitcoind.pid
+                             -conf=/root/.bitcoin/bitcoin.conf \
+                             -pid=/run/bitcoind.pid
 
 
 Restart=always
@@ -233,27 +232,26 @@ StartLimitBurst=5
 WantedBy=multi-user.target
 EOF
 
-  echo "Bitcoin Core systemd service unit created."
+    echo "Bitcoin Core systemd service unit created."
 }
 
 # Function to start and enable Bitcoin Core service
 start_and_enable_bitcoin_core() {
-  systemctl start bitcoind
-  systemctl enable bitcoind
-  echo "Bitcoin Core has been started and enabled as a systemd service."
+    systemctl start bitcoind
+    systemctl enable bitcoind
+    echo "Bitcoin Core has been started and enabled as a systemd service."
 }
 
 # Main script starts here
 
-
 # Check if the script is being run as root
 if [ "$EUID" -ne 0 ]; then
-  echo "Please run this script as root."
-  exit 1
+    echo "Please run this script as root."
+    exit 1
 fi
 
 # Custom ASCII art welcome message
-cat << "EOF"
+cat <<"EOF"
 !   .::::::.     ...     :::      .::.:::::::..     :::.     :::.    :::.    :::.    :::.    ...     :::::::-.  .,::::::      ::::::::::.   :::.       .,-:::::   :::  .
 !  ;;;`    `  .;;;;;;;.  ';;,   ,;;;' ;;;;``;;;;    ;;`;;    `;;;;,  `;;;    `;;;;,  `;;; .;;;;;;;.   ;;,   `';,;;;;''''       `;;;```.;;;  ;;`;;    ,;;;'````'   ;;; .;;,.
 !  '[==/[[[[,,[[     \[[, \[[  .[[/    [[[,/[[['   ,[[ '[[,    [[[[[. '[[      [[[[[. '[[,[[     \[[, `[[     [[ [[cccc         `]]nnn]]'  ,[[ '[[,  [[[          [[[[[/'  
@@ -277,19 +275,19 @@ echo "Creating a new user named 'bitcoin' please choose a password and remember 
 adduser --disabled-password --gecos "" bitcoin
 echo "Please set the password for the 'bitcoin' user:"
 passwd bitcoin
- 
+
 # Prompt the user if they want to install TOR
 if [ "$(prompt_yes_no 'Do you want to install TOR?')" == "yes" ]; then
-  install_tor
+    install_tor
 else
-  echo "TOR installation skipped."
+    echo "TOR installation skipped."
 fi
 
 # Prompt the user if they want to install I2P
 if [ "$(prompt_yes_no 'Do you want to install I2P?')" == "yes" ]; then
-  install_i2p
+    install_i2p
 else
-  echo "I2P installation skipped."
+    echo "I2P installation skipped."
 fi
 
 # Inform the user before proceeding to Bitcoin Core installation
@@ -303,14 +301,14 @@ download_and_verify_bitcoin_core
 
 # Configure Bitcoin Core based on the user's choices for Tor and I2P
 if [[ "$install_tor_choice" == "yes" || "$install_i2p_choice" == "yes" ]]; then
-  echo "Do you want to enable Tor and I2P only mode? (y/n)"
-  if [ "$(prompt_yes_no 'Enable Tor and I2P only mode?')" == "yes" ]; then
-    configure_bitcoin_core "yes"
-  else
-    configure_bitcoin_core "no"
-  fi
+    echo "Do you want to enable Tor and I2P only mode? (y/n)"
+    if [ "$(prompt_yes_no 'Enable Tor and I2P only mode?')" == "yes" ]; then
+        configure_bitcoin_core "yes"
+    else
+        configure_bitcoin_core "no"
+    fi
 else
-  configure_bitcoin_core "no"
+    configure_bitcoin_core "no"
 fi
 
 echo "Bitcoin Core has been successfully installed and configured."
@@ -325,5 +323,3 @@ systemctl daemon-reload
 start_and_enable_bitcoin_core
 
 echo "Bitcoin Core has been successfully installed and configured."
-
-

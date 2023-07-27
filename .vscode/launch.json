@@ -1,13 +1,13 @@
 {
     "version": "0.2.0",
     "configurations": [
-      {
-        "name": "Debug Shell Script",
-        "type": "shell",
-        "request": "launch",
-        "program": "${workspaceFolder}/nodeinstall.sh",
-        "cwd": "${workspaceFolder}",
-        "args": []
-      }
+        {
+            "name": "Debug Shell Script",
+            "type": "shell",
+            "request": "launch",
+            "program": "${workspaceFolder}/nodeinstall.sh",
+            "cwd": "${workspaceFolder}",
+            "args": []
+        }
     ]
-  }
+}
