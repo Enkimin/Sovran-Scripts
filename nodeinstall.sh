@@ -386,12 +386,17 @@ read -n 1 -s -r -p "Press any key to continue..."
 
 echo -e "\n"
 
-# Create a new user named "bitcoin" and set the password
-echo "making a user called bitcoin..."
-sleep 1 
-adduser --disabled-password --gecos "" bitcoin
-echo "Please set the password for the 'bitcoin' user. Youll need this if you want to log into the user."
-passwd bitcoin
+# Check if the user 'bitcoin' already exists
+if id "bitcoin" &>/dev/null; then
+    echo "User 'bitcoin' already exists. Skipping user creation..."
+else
+    # Create a new user named "bitcoin" and set the password
+    echo "Creating a user called bitcoin..."
+    sleep 1
+    adduser --disabled-password --gecos "" bitcoin
+    echo "Please set the password for the 'bitcoin' user. You'll need this if you want to log into the user."
+    passwd bitcoin
+fi
 
 # Prompt the user if they want to install TOR
 if [ "$(prompt_yes_no 'Do you want to install TOR?')" == "yes" ]; then
