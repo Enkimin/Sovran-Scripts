@@ -1,4 +1,5 @@
 #!/bin/bash
+#This is a script to install Bitcoin Core and Lightning. 
 set -e
 
 # Function to check if a package is installed
