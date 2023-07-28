@@ -127,7 +127,6 @@ install_i2p() {
         apt install -y i2p
 
         echo "Starting the I2P service..."
-        systemctl enable i2p
         systemctl start i2p
 
         # Enable I2Pd's web console if the user chooses to do so
@@ -143,27 +142,29 @@ install_i2p() {
 
 # Function to enable I2Pd's web console
 enable_i2pd_web_console() {
-    # Comment out existing http section entries
-    sed -i 's/^http.address =/#http.address =/' /var/lib/i2p/i2p-config
-    sed -i 's/^http.port =/#http.port =/' /var/lib/i2p/i2p-config
-    sed -i 's/^http.auth =/#http.auth =/' /var/lib/i2p/i2p-config
+    # Enable I2Pd's web console using i2prouter
+    echo "Enabling I2Pd Web Console..."
+    i2prouter enablewebconsole
 
-    # Add new settings for http section
-    echo "http.address=127.0.0.1" >>/var/lib/i2p/i2p-config
-    echo "http.port=7070" >>/var/lib/i2p/i2p-config
-    echo "http.auth=true" >>/var/lib/i2p/i2p-config
-    echo "http.user=bitcoin" >>/var/lib/i2p/i2p-config
-    echo "http.pass=bitcoin" >>/var/lib/i2p/i2p-config
-
-    echo "I2Pd web console enabled successfully."
+    echo "I2Pd Web Console enabled successfully."
 }
 
 # Function to install required repositories for Bitcoin Core
 install_bitcoin_core_dependencies() {
     echo "Installing required repositories for Bitcoin Core..."
     sleep 1
+
+    # Check if git is installed and install it if not
+    if ! is_package_installed "git"; then
+        echo "Installing git..."
+        apt install -y git
+    else
+        echo "git is already installed."
+    fi
+
     apt install -y build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev libboost-thread-dev libboost-all-dev libzmq3-dev
 }
+
 
 # Function to download and install Bitcoin Core in the /home/bitcoin/node/ folder
 download_and_install_bitcoin_core() {
