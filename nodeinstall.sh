@@ -42,17 +42,9 @@ is_tor_repository_installed() {
 
 # Function to install TOR
 install_tor() {
-    # Check if TOR is already installed and running
-    if is_package_installed "tor" && systemctl is-active --quiet tor; then
-        echo "TOR is already installed and running. Skipping TOR installation..."
-        # Check if the user 'bitcoin' is part of the 'debian-tor' group
-        if id "bitcoin" &>/dev/null && groups bitcoin | grep -q "\bdebian-tor\b"; then
-            echo "The user 'bitcoin' is already a member of the 'debian-tor' group."
-        else
-            echo "Adding the user 'bitcoin' to the 'debian-tor' group to allow TOR access..."
-            groupadd -f debian-tor  # Create the group if it doesn't exist
-            usermod -a -G debian-tor bitcoin
-        fi
+    # Check if TOR is already installed
+    if is_package_installed "tor"; then
+        echo "TOR is already installed. Skipping TOR installation..."
     else
         # Inform the user about TOR and its installation
         echo "TOR is a free and open-source software for enabling anonymous communication."
@@ -62,10 +54,11 @@ install_tor() {
 
         # Confirm TOR installation with the user
         if [ "$(prompt_yes_no 'Do you want to install TOR?')" == "yes" ]; then
-            echo "Adding TOR repository..."
-            echo "deb http://deb.torproject.org/torproject.org $(lsb_release -cs) main" >>/etc/apt/sources.list.d/tor.list
-            gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
-            gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
+            echo "Adding the TOR repository..."
+            echo "deb https://deb.torproject.org/torproject.org $(lsb_release -cs) main" >>/etc/apt/sources.list.d/tor.list
+
+            echo "Importing the TOR project's GPG key..."
+            wget -qO - https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor --output /etc/apt/trusted.gpg.d/tor.gpg
 
             echo "Updating package lists with the new repository..."
             apt update
@@ -96,6 +89,7 @@ install_tor() {
         fi
     fi
 }
+
 
 
 
