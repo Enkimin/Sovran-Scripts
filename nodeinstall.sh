@@ -44,7 +44,31 @@ is_tor_repository_installed() {
 install_tor() {
     # Check if TOR is already installed
     if is_package_installed "tor"; then
-        echo "TOR is already installed. Skipping TOR installation..."
+        echo "TOR is already installed."
+
+        # Make necessary configuration changes based on user's choices
+        echo "Updating TOR configuration..."
+        echo "Adding the user 'bitcoin' to the 'debian-tor' group to allow TOR access..."
+        usermod -a -G debian-tor bitcoin
+
+        echo "Setting correct permissions for the TOR configuration directory..."
+        chown -R debian-tor:debian-tor /var/lib/tor
+
+        echo "Adding custom configurations to the torrc file..."
+        if [ "$(prompt_yes_no 'Do you want to enable TOR SOCKS proxy for Bitcoin Core?')" == "yes" ]; then
+            echo "SOCKSPort 9050" >>/etc/tor/torrc
+        fi
+
+        if [ "$(prompt_yes_no 'Do you want to enable TOR ControlPort for Bitcoin Core?')" == "yes" ]; then
+            echo "ControlPort 9051" >>/etc/tor/torrc
+            echo "CookieAuthentication 1" >>/etc/tor/torrc
+            echo "CookieAuthFileGroupReadable 1" >>/etc/tor/torrc
+        fi
+
+        echo "Restarting TOR for changes to take effect..."
+        systemctl restart tor
+
+        echo "TOR configuration has been updated."
         return
     fi
 
@@ -78,7 +102,15 @@ install_tor() {
         chown -R debian-tor:debian-tor /var/lib/tor
 
         echo "Adding custom configurations to the torrc file..."
-        echo -e "ControlPort 9051\nCookieAuthentication 1\nCookieAuthFileGroupReadable 1\nLog notice stdout\nSOCKSPort 9050" >>/etc/tor/torrc
+        if [ "$(prompt_yes_no 'Do you want to enable TOR SOCKS proxy for Bitcoin Core?')" == "yes" ]; then
+            echo -e "SOCKSPort 9050" >>/etc/tor/torrc
+        fi
+
+        if [ "$(prompt_yes_no 'Do you want to enable TOR ControlPort for Bitcoin Core?')" == "yes" ]; then
+            echo -e "ControlPort 9051" >>/etc/tor/torrc
+            echo -e "CookieAuthentication 1" >>/etc/tor/torrc
+            echo -e "CookieAuthFileGroupReadable 1" >>/etc/tor/torrc
+        fi
 
         echo "Restarting TOR for changes to take effect..."
         systemctl restart tor
@@ -89,6 +121,7 @@ install_tor() {
     fi
 }
 
+
 # Function to check if the I2P repository entry already exists
 is_i2p_repository_installed() {
     grep -q "deb https://repo.i2pd.xyz $(lsb_release -cs) main" /etc/apt/sources.list.d/i2pd.list
@@ -98,7 +131,10 @@ is_i2p_repository_installed() {
 install_i2p() {
     # Check if I2P is already installed
     if is_package_installed "i2p"; then
-        echo "I2P is already installed. Skipping I2P installation..."
+        echo "I2P is already installed."
+        if [ "$(prompt_yes_no 'Do you want to enable I2Pd Web Console?')" == "yes" ]; then
+            enable_i2pd_web_console
+        fi
         return
     fi
 
@@ -140,6 +176,7 @@ install_i2p() {
     fi
 }
 
+
 # Function to enable I2Pd's web console
 enable_i2pd_web_console() {
     # Enable I2Pd's web console using i2prouter
@@ -177,7 +214,7 @@ download_and_install_bitcoin_core() {
 
     # Fetch the latest version number from the GitHub API
     echo "Fetching the latest version of Bitcoin Core..."
-    sleep 1 
+    sleep 1
     latest_version=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
     if [[ -z "$latest_version" ]]; then
         echo "Failed to fetch the latest version of Bitcoin Core. Aborting the installation."
@@ -191,6 +228,9 @@ download_and_install_bitcoin_core() {
         echo "Failed to clone the Bitcoin Core repository. Aborting the installation."
         exit 1
     fi
+
+    # Verify the cryptographic checksum of the downloaded source code
+    verify_checksum
 
     # Navigate into the Bitcoin Core directory
     echo "Entering the Bitcoin Core directory..."
@@ -211,7 +251,28 @@ download_and_install_bitcoin_core() {
     fi
 
     echo "Bitcoin Core installation completed successfully!"
-    sleep 1 
+    sleep 1
+}
+
+# Function to verify cryptographic checksum of the downloaded Bitcoin Core source code
+verify_checksum() {
+    local checksum_file="/home/bitcoin/node/bitcoin-${latest_version}/SHA256SUMS.asc"
+    local source_code_file="/home/bitcoin/node/bitcoin-${latest_version}/bitcoin-${latest_version}.tar.gz"
+
+    # Download the Bitcoin Core signature file
+    echo "Downloading Bitcoin Core signature file..."
+    sleep 1
+    gpg --keyserver keyserver.ubuntu.com --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964
+    gpg --verify "$checksum_file"
+
+    # Verify the checksum of the Bitcoin Core source code
+    echo "Verifying the cryptographic checksum of the Bitcoin Core source code..."
+    sleep 1
+    sha256sum -c --ignore-missing "$checksum_file" --status
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Cryptographic checksum verification failed. Aborting the installation."
+        exit 1
+    fi
 }
 
 # Function to configure Bitcoin Core based on user choices and add default settings
@@ -234,26 +295,14 @@ configure_bitcoin_core() {
         if [ "$(prompt_yes_no 'Enable hybrid mode for TOR?')" == "yes" ]; then
             echo -e "onlynet=onion,ipv4,ipv6" >>"$bitcoin_conf_file"
         else
-            echo "Enabling TOR-only mode may slow down the Initial Block Download (IBD) for TOR."
-            echo "Please make sure you have a stable internet connection and hit 'yes' to continue."
-            if [ "$(prompt_yes_no 'Enable TOR-only mode?')" == "yes" ]; then
-                echo -e "onlynet=onion" >>"$bitcoin_conf_file"
-            else
-                echo -e "onlynet=ipv4,ipv6" >>"$bitcoin_conf_file"
-            fi
+            echo -e "onlynet=onion" >>"$bitcoin_conf_file"
         fi
 
         echo "Do you want to use a 'hybrid mode' with IPv4/IPv6 for I2P? (y/n)"
         if [ "$(prompt_yes_no 'Enable hybrid mode for I2P?')" == "yes" ]; then
             echo -e "onlynet=i2p,ipv4,ipv6" >>"$bitcoin_conf_file"
         else
-            echo "Enabling I2P-only mode may slow down the Initial Block Download (IBD) for I2P."
-            echo "Please make sure you have a stable internet connection and hit 'yes' to continue."
-            if [ "$(prompt_yes_no 'Enable I2P-only mode?')" == "yes" ]; then
-                echo -e "onlynet=i2p" >>"$bitcoin_conf_file"
-            else
-                echo -e "onlynet=ipv4,ipv6" >>"$bitcoin_conf_file"
-            fi
+            echo -e "onlynet=i2p" >>"$bitcoin_conf_file"
         fi
     elif [[ "$use_tor" == "yes" ]]; then
         # Only TOR is installed
@@ -261,13 +310,7 @@ configure_bitcoin_core() {
         if [ "$(prompt_yes_no 'Enable hybrid mode?')" == "yes" ]; then
             echo -e "onlynet=onion,ipv4,ipv6" >>"$bitcoin_conf_file"
         else
-            echo "Enabling TOR-only mode may slow down the Initial Block Download (IBD)."
-            echo "Please make sure you have a stable internet connection and hit 'yes' to continue."
-            if [ "$(prompt_yes_no 'Enable TOR-only mode?')" == "yes" ]; then
-                echo -e "onlynet=onion" >>"$bitcoin_conf_file"
-            else
-                echo -e "onlynet=ipv4,ipv6" >>"$bitcoin_conf_file"
-            fi
+            echo -e "onlynet=onion" >>"$bitcoin_conf_file"
         fi
     elif [[ "$use_i2p" == "yes" ]]; then
         # Only I2P is installed
@@ -275,13 +318,7 @@ configure_bitcoin_core() {
         if [ "$(prompt_yes_no 'Enable hybrid mode for I2P?')" == "yes" ]; then
             echo -e "onlynet=i2p,ipv4,ipv6" >>"$bitcoin_conf_file"
         else
-            echo "Enabling I2P-only mode may slow down the Initial Block Download (IBD) for I2P."
-            echo "Please make sure you have a stable internet connection and hit 'yes' to continue."
-            if [ "$(prompt_yes_no 'Enable I2P-only mode?')" == "yes" ]; then
-                echo -e "onlynet=i2p" >>"$bitcoin_conf_file"
-            else
-                echo -e "onlynet=ipv4,ipv6" >>"$bitcoin_conf_file"
-            fi
+            echo -e "onlynet=i2p" >>"$bitcoin_conf_file"
         fi
     else
         # Neither TOR nor I2P is installed
@@ -302,6 +339,7 @@ configure_bitcoin_core() {
     echo -e "nopeerbloomfilters=1" >>"$bitcoin_conf_file"
     echo -e "peerbloomfilters=0" >>"$bitcoin_conf_file"
     echo -e "permitbaremultisig=0" >>"$bitcoin_conf_file"
+    echo -e "debug=1" >>"$bitcoin_conf_file"
     echo -e "shrinkdebuglog=1" >>"$bitcoin_conf_file"
     echo -e "debug=mempool" >>"$bitcoin_conf_file"
     echo -e "debug=rpc" >>"$bitcoin_conf_file"
@@ -317,6 +355,7 @@ configure_bitcoin_core() {
 
     echo "Bitcoin Core configuration completed successfully!"
 }
+
 
 # Function to create systemd service unit for Bitcoin Core
 create_bitcoin_core_service() {
@@ -350,7 +389,13 @@ WantedBy=multi-user.target
 EOF
 
     echo "Bitcoin Core systemd service unit created."
+
+    # Reload systemd daemon to recognize the new service
+    echo "Reloading systemd daemon to recognize the new service..."
+    sleep 1
+    systemctl daemon-reload
 }
+
 
 # Function to start and enable Bitcoin Core service
 start_and_enable_bitcoin_core() {
