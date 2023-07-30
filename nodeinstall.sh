@@ -44,80 +44,54 @@ is_tor_repository_installed() {
 install_tor() {
     # Check if TOR is already installed
     if is_package_installed "tor"; then
-        echo "TOR is already installed."
-
-        # Make necessary configuration changes based on user's choices
-        echo "Updating TOR configuration..."
-        echo "Adding the user 'bitcoin' to the 'debian-tor' group to allow TOR access..."
-        usermod -a -G debian-tor bitcoin
-
-        echo "Setting correct permissions for the TOR configuration directory..."
-        chown -R debian-tor:debian-tor /var/lib/tor
-
-        echo "Adding custom configurations to the torrc file..."
-        if [ "$(prompt_yes_no 'Do you want to enable TOR SOCKS proxy for Bitcoin Core?')" == "yes" ]; then
-            echo "SOCKSPort 9050" >>/etc/tor/torrc
+        echo "TOR is already installed. Skipping TOR installation..."
+        # Check if the user 'bitcoin' is part of the 'debian-tor' group
+        if id "bitcoin" &>/dev/null && groups bitcoin | grep -q "\bdebian-tor\b"; then
+            echo "The user 'bitcoin' is already a member of the 'debian-tor' group."
+        else
+            echo "Adding the user 'bitcoin' to the 'debian-tor' group to allow TOR access..."
+            usermod -a -G debian-tor bitcoin
         fi
-
-        if [ "$(prompt_yes_no 'Do you want to enable TOR ControlPort for Bitcoin Core?')" == "yes" ]; then
-            echo "ControlPort 9051" >>/etc/tor/torrc
-            echo "CookieAuthentication 1" >>/etc/tor/torrc
-            echo "CookieAuthFileGroupReadable 1" >>/etc/tor/torrc
-        fi
-
-        echo "Restarting TOR for changes to take effect..."
-        systemctl restart tor
-
-        echo "TOR configuration has been updated."
-        return
-    fi
-
-    # Inform the user about TOR and its installation
-    echo "TOR is a free and open-source software for enabling anonymous communication."
-    echo "It directs internet traffic through a worldwide volunteer network consisting of thousands of relays to conceal a user's location and usage from anyone conducting network surveillance or traffic analysis."
-    echo "TOR is commonly used to access the internet anonymously and bypass censorship."
-    echo "Please note that using TOR might slow down your internet connection due to the nature of the anonymization process."
-
-    # Confirm TOR installation with the user
-    if [ "$(prompt_yes_no 'Do you want to install TOR?')" == "yes" ]; then
-        echo "Adding TOR repository..."
-        echo "deb http://deb.torproject.org/torproject.org $(lsb_release -cs) main" >>/etc/apt/sources.list.d/tor.list
-        gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
-        gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
-
-        echo "Updating package lists with the new repository..."
-        apt update
-
-        echo "Installing TOR..."
-        apt install -y tor
-
-        echo "Installing additional dependencies for TOR..."
-        apt install -y torsocks
-        apt install -y tor-geoipdb
-
-        echo "Adding the user 'bitcoin' to the 'debian-tor' group to allow TOR access..."
-        usermod -a -G debian-tor bitcoin
-
-        echo "Setting correct permissions for the TOR configuration directory..."
-        chown -R debian-tor:debian-tor /var/lib/tor
-
-        echo "Adding custom configurations to the torrc file..."
-        if [ "$(prompt_yes_no 'Do you want to enable TOR SOCKS proxy for Bitcoin Core?')" == "yes" ]; then
-            echo -e "SOCKSPort 9050" >>/etc/tor/torrc
-        fi
-
-        if [ "$(prompt_yes_no 'Do you want to enable TOR ControlPort for Bitcoin Core?')" == "yes" ]; then
-            echo -e "ControlPort 9051" >>/etc/tor/torrc
-            echo -e "CookieAuthentication 1" >>/etc/tor/torrc
-            echo -e "CookieAuthFileGroupReadable 1" >>/etc/tor/torrc
-        fi
-
-        echo "Restarting TOR for changes to take effect..."
-        systemctl restart tor
-
-        echo "TOR has been successfully installed and configured."
     else
-        echo "TOR installation skipped."
+        # Inform the user about TOR and its installation
+        echo "TOR is a free and open-source software for enabling anonymous communication."
+        echo "It directs internet traffic through a worldwide volunteer network consisting of thousands of relays to conceal a user's location and usage from anyone conducting network surveillance or traffic analysis."
+        echo "TOR is commonly used to access the internet anonymously and bypass censorship."
+        echo "Please note that using TOR might slow down your internet connection due to the nature of the anonymization process."
+
+        # Confirm TOR installation with the user
+        if [ "$(prompt_yes_no 'Do you want to install TOR?')" == "yes" ]; then
+            echo "Adding TOR repository..."
+            echo "deb http://deb.torproject.org/torproject.org $(lsb_release -cs) main" >>/etc/apt/sources.list.d/tor.list
+            gpg --keyserver keys.gnupg.net --recv A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89
+            gpg --export A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89 | apt-key add -
+
+            echo "Updating package lists with the new repository..."
+            apt update
+
+            echo "Installing TOR..."
+            apt install -y tor
+
+            echo "Installing additional dependencies for TOR..."
+            apt install -y torsocks
+            apt install -y tor-geoipdb
+
+            echo "Adding the user 'bitcoin' to the 'debian-tor' group to allow TOR access..."
+            usermod -a -G debian-tor bitcoin
+
+            echo "Setting correct permissions for the TOR configuration directory..."
+            chown -R debian-tor:debian-tor /var/lib/tor
+
+            echo "Adding custom configurations to the torrc file..."
+            echo -e "ControlPort 9051\nCookieAuthentication 1\nCookieAuthFileGroupReadable 1\nLog notice stdout\nSOCKSPort 9050" >>/etc/tor/torrc
+
+            echo "Restarting TOR for changes to take effect..."
+            systemctl restart tor
+
+            echo "TOR has been successfully installed and configured."
+        else
+            echo "TOR installation skipped."
+        fi
     fi
 }
 
