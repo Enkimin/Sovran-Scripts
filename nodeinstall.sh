@@ -42,14 +42,15 @@ is_tor_repository_installed() {
 
 # Function to install TOR
 install_tor() {
-    # Check if TOR is already installed
-    if is_package_installed "tor"; then
-        echo "TOR is already installed. Skipping TOR installation..."
+    # Check if TOR is already installed and running
+    if is_package_installed "tor" && systemctl is-active --quiet tor; then
+        echo "TOR is already installed and running. Skipping TOR installation..."
         # Check if the user 'bitcoin' is part of the 'debian-tor' group
         if id "bitcoin" &>/dev/null && groups bitcoin | grep -q "\bdebian-tor\b"; then
             echo "The user 'bitcoin' is already a member of the 'debian-tor' group."
         else
             echo "Adding the user 'bitcoin' to the 'debian-tor' group to allow TOR access..."
+            groupadd -f debian-tor  # Create the group if it doesn't exist
             usermod -a -G debian-tor bitcoin
         fi
     else
@@ -77,6 +78,7 @@ install_tor() {
             apt install -y tor-geoipdb
 
             echo "Adding the user 'bitcoin' to the 'debian-tor' group to allow TOR access..."
+            groupadd -f debian-tor  # Create the group if it doesn't exist
             usermod -a -G debian-tor bitcoin
 
             echo "Setting correct permissions for the TOR configuration directory..."
@@ -94,6 +96,7 @@ install_tor() {
         fi
     fi
 }
+
 
 
 # Function to check if the I2P repository entry already exists
