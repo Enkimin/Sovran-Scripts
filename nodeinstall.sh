@@ -4,7 +4,11 @@ set -e
 
 # Function to check if a package is installed
 is_package_installed() {
-    dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q "installed"
+    if dpkg -l "$1" 2>/dev/null | grep -q "^ii"; then
+        return 0  # Package is installed
+    else
+        return 1  # Package is not installed
+    fi
 }
 
 # Function to prompt the user with a yes/no question and return their choice
@@ -170,6 +174,7 @@ install_bitcoin_core_dependencies() {
 
     apt install -y build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev libboost-thread-dev libboost-all-dev libzmq3-dev
 }
+
 
 
 # Function to download and install Bitcoin Core in the /home/bitcoin/node/ folder
