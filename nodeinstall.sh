@@ -91,8 +91,6 @@ install_tor() {
 }
 
 
-
-
 # Function to check if the I2P repository entry already exists
 is_i2p_repository_installed() {
     grep -q "deb https://repo.i2pd.xyz $(lsb_release -cs) main" /etc/apt/sources.list.d/i2pd.list
