@@ -113,9 +113,6 @@ install_i2p() {
     # Check if I2P is already installed
     if is_package_installed "i2p"; then
         echo "I2P is already installed."
-        if [ "$(prompt_yes_no 'Do you want to enable the I2Pd Web Console?')" == "yes" ]; then
-            enable_i2pd_web_console
-        fi
         return
     fi
 
@@ -146,27 +143,12 @@ install_i2p() {
         echo "Starting the I2P service..."
         systemctl start i2p
 
-        # Enable I2Pd's web console if the user chooses to do so
-        if [ "$(prompt_yes_no 'Do you want to enable I2Pd Web Console?')" == "yes" ]; then
-            enable_i2pd_web_console
-        fi
-
-        echo "I2P has been successfully installed and configured."
+        echo "I2P has been installed. Moving on..."
         sleep 1
     else
-        echo "I2P installation skipped."
+        echo "I2P installation skipped. Moving on..."
         sleep 1
     fi
-}
-
-# Function to enable I2Pd's web console
-enable_i2pd_web_console() {
-    # Enable I2Pd's web console using i2prouter as the 'bitcoin' user
-    echo "Enabling I2Pd Web Console..."
-    su - bitcoin -c "i2prouter console start"
-
-    echo "I2Pd Web Console enabled successfully. Moving on...."
-    sleep 1
 }
 
 # Function to install required repositories for Bitcoin Core
@@ -508,12 +490,14 @@ fi
 if [ "$(prompt_yes_no 'Do you want to install I2P?')" == "yes" ]; then
     install_i2p
 else
-    echo "I2P installation skipped."
+    echo "I2P installation skipped. Moving on..."
 fi
 
 # Check if the Bitcoin Core binary is already installed in /usr/local/bin
 if command -v bitcoind &>/dev/null; then
-    echo "Bitcoin Core is already installed. Skipping download and installation..."
+    echo "Bitcoin Core is already installed. Skipping installation..."
+    echo "Moving on to Config..."
+    sleep 1
 else
     # Install required repositories for Bitcoin Core
     install_bitcoin_core_dependencies
