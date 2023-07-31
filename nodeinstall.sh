@@ -239,6 +239,12 @@ verify_checksum() {
     gpg --keyserver keyserver.ubuntu.com --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964
     gpg --verify "$checksum_file"
 
+    # Check if the checksum file exists before proceeding
+    if [ ! -f "$checksum_file" ]; then
+        echo "ERROR: Cryptographic checksum file not found. Aborting the installation."
+        exit 1
+    fi
+
     # Verify the checksum of the Bitcoin Core source code
     echo "Verifying the cryptographic checksum of the Bitcoin Core source code..."
     sleep 1
@@ -248,6 +254,7 @@ verify_checksum() {
         exit 1
     fi
 }
+
 
 # Function to configure Bitcoin Core based on user choices and add default settings
 configure_bitcoin_core() {
