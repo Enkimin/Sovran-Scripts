@@ -309,8 +309,17 @@ EOF
             echo "Hybrid Mode enabled. Moving on..."
             echo -e "proxy=127.0.0.1:9050" >>"$bitcoin_conf_file"
             echo -e "i2psam=127.0.0.1:7656" >>"$bitcoin_conf_file"
-            # Add TOR and I2P node addresses
-            # ...
+            echo -e "addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0" >>"$bitcoin_conf_file"
             sleep 1
         else
             # Privacy-only mode: Use only TOR and I2P
@@ -318,8 +327,17 @@ EOF
             echo -e "onlynet=onion,i2p" >>"$bitcoin_conf_file"
             echo -e "proxy=127.0.0.1:9050" >>"$bitcoin_conf_file"
             echo -e "i2psam=127.0.0.1:7656" >>"$bitcoin_conf_file"
-            # Add TOR and I2P node addresses
-            # ...
+            echo -e "addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0" >>"$bitcoin_conf_file"
+            echo -e "addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0" >>"$bitcoin_conf_file"
             sleep 1
         fi
 
@@ -329,15 +347,22 @@ EOF
         echo "TOR-only mode enabled. Moving on..."
         echo -e "onlynet=onion" >>"$bitcoin_conf_file"
         echo -e "proxy=127.0.0.1:9050" >>"$bitcoin_conf_file"
-        # Add TOR node addresses
-        # ...
     elif [ "$use_i2p" == "yes" ]; then
         # I2P-only mode
         echo "I2P-only mode enabled. Moving on..."
         echo -e "onlynet=i2p" >>"$bitcoin_conf_file"
         echo -e "i2psam=127.0.0.1:7656" >>"$bitcoin_conf_file"
-        # Add I2P node addresses
-        # ...
+        echo -e "addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0" >>"$bitcoin_conf_file"
+        echo -e "addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0" >>"$bitcoin_conf_file"
+        echo -e "addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0" >>"$bitcoin_conf_file"
+        echo -e "addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0" >>"$bitcoin_conf_file"
+        echo -e "addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0" >>"$bitcoin_conf_file"
+        echo -e "addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0" >>"$bitcoin_conf_file"
+        echo -e "addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0" >>"$bitcoin_conf_file"
+        echo -e "addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0" >>"$bitcoin_conf_file"
+        echo -e "addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0" >>"$bitcoin_conf_file"
+        echo -e "addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0" >>"$bitcoin_conf_file"
+        echo -e "addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0" >>"$bitcoin_conf_file"
     fi
 
     # Set Bitcoin Core data directory (datadir) to /home/bitcoin/.bitcoin
