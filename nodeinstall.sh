@@ -202,16 +202,13 @@ download_and_install_bitcoin_core() {
         exit 1
     fi
 
-    # Verify the cryptographic checksum of the downloaded source code
-    verify_checksum "$node_folder" "$latest_version" "${node_folder}/bitcoin-${latest_version}/bitcoin-${latest_version}.tar.gz.sig"
-
     # Navigate into the Bitcoin Core directory
     echo "Entering the Bitcoin Core directory..."
     sleep 1
     cd "$node_folder/bitcoin-$latest_version" || (echo "Failed to enter the Bitcoin Core directory. Aborting the installation." && exit 1)
 
     # Build and install Bitcoin Core
-    echo "Building Bitcoin Core. This can take a while so go touch some grass."
+    echo "Building Bitcoin Core. This can take a while, so go touch some grass."
     sleep 1
     ./autogen.sh
     ./configure
@@ -231,25 +228,29 @@ download_and_install_bitcoin_core() {
 verify_checksum() {
     local node_folder="$1"
     local latest_version="$2"
-    local signature_file="$3"
     local checksum_file="${node_folder}/bitcoin-${latest_version}/SHA256SUMS.asc"
     local source_code_file="${node_folder}/bitcoin-${latest_version}/bitcoin-${latest_version}.tar.gz"
 
     # Download the Bitcoin Core signature file
     echo "Downloading Bitcoin Core signature file..."
     sleep 1
-    gpg --keyserver keyserver.ubuntu.com --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964
-    gpg --verify "$signature_file" "$source_code_file"
+    wget -q "https://bitcoincore.org/bin/bitcoin-core-${latest_version}/SHA256SUMS.asc" -P "$node_folder"
 
-    # Verify the checksum of the Bitcoin Core source code
+    # Import Bitcoin Core developers' signing key
+    echo "Importing Bitcoin Core developers' signing key..."
+    sleep 1
+    gpg --import bitcoin.asc
+
+    # Verify the cryptographic checksum of the Bitcoin Core source code
     echo "Verifying the cryptographic checksum of the Bitcoin Core source code..."
     sleep 1
-    sha256sum -c --ignore-missing "$checksum_file" --status
+    sha256sum -c --ignore-missing "$checksum_file"
     if [ $? -ne 0 ]; then
         echo "ERROR: Cryptographic checksum verification failed. Aborting the installation."
         exit 1
     fi
 }
+
 
 
 
