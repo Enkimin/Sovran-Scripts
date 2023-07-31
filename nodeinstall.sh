@@ -176,7 +176,6 @@ install_bitcoin_core_dependencies() {
 }
 
 
-
 # Function to download and install Bitcoin Core in the /home/bitcoin/node/ folder
 download_and_install_bitcoin_core() {
     local node_folder="/home/bitcoin/node"
@@ -232,11 +231,12 @@ download_and_install_bitcoin_core() {
 verify_checksum() {
     local checksum_file="/home/bitcoin/node/bitcoin-${latest_version}/SHA256SUMS.asc"
     local source_code_file="/home/bitcoin/node/bitcoin-${latest_version}/bitcoin-${latest_version}.tar.gz"
+    local bitcoin_core_dir="/home/bitcoin/node/bitcoin-${latest_version}"
 
     # Download the Bitcoin Core signature file
     echo "Downloading Bitcoin Core signature file..."
     sleep 1
-    gpg --keyserver keyserver.ubuntu.com --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964
+    gpg --keyserver keyserver.ubuntu.com --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964 --directory "$bitcoin_core_dir"
     gpg --verify "$checksum_file"
 
     # Check if the checksum file exists before proceeding
