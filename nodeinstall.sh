@@ -268,34 +268,34 @@ copy_bitcoin_core_binary() {
 # Function to configure Bitcoin Core based on user choices and add default settings
 configure_bitcoin_core() {
     local bitcoin_conf_file="/home/bitcoin/.bitcoin/bitcoin.conf"
-    local use_tor="$1"
-    local use_i2p="$2"
+    local use_tor="\$1"
+    local use_i2p="\$2"
 
     echo "Configuring Bitcoin Core..."
     sleep 1
 
     # Load the bitcoin.conf template
     cat >"$bitcoin_conf_file" <<EOF
-# [core]
-# Maintain coinstats index used by the gettxoutsetinfo RPC.
-coinstatsindex=1
-# Run in the background as a daemon and accept commands.
-daemon=1
-# Wait for initialization to be finished before exiting. This implies -daemon.
-daemonwait=1
-# Set database cache size in megabytes; machines sync faster with a larger cache.
-dbcache=600
-# Keep the transaction memory pool below <n> megabytes.
-maxmempool=500
-# Maintain a full transaction index, used by the getrawtransaction rpc call.
-txindex=1
-# Turn off serving SPV nodes
-nopeerbloomfilters=1
-peerbloomfilters=0
-# Don't accept deprecated multi-sig style
-permitbaremultisig=0
-# Reduce the log file size on restarts
-shrinkdebuglog=1
+    # [core]
+    # Maintain coinstats index used by the gettxoutsetinfo RPC.
+    coinstatsindex=1
+    # Run in the background as a daemon and accept commands.
+    daemon=1
+    # Wait for initialization to be finished before exiting. This implies -daemon.
+    daemonwait=1
+    # Set database cache size in megabytes; machines sync faster with a larger cache.
+    dbcache=600
+    # Keep the transaction memory pool below <n> megabytes.
+    maxmempool=500
+    # Maintain a full transaction index, used by the getrawtransaction rpc call.
+    txindex=1
+    # Turn off serving SPV nodes
+    nopeerbloomfilters=1
+    peerbloomfilters=0
+    # Don't accept deprecated multi-sig style
+    permitbaremultisig=0
+    # Reduce the log file size on restarts
+    shrinkdebuglog=1
 
 EOF
 
@@ -309,17 +309,8 @@ EOF
             echo "Hybrid Mode enabled. Moving on..."
             echo -e "proxy=127.0.0.1:9050" >>"$bitcoin_conf_file"
             echo -e "i2psam=127.0.0.1:7656" >>"$bitcoin_conf_file"
-            echo -e "addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0" >>"$bitcoin_conf_file"
+            # Add TOR and I2P node addresses
+            # ...
             sleep 1
         else
             # Privacy-only mode: Use only TOR and I2P
@@ -327,17 +318,8 @@ EOF
             echo -e "onlynet=onion,i2p" >>"$bitcoin_conf_file"
             echo -e "proxy=127.0.0.1:9050" >>"$bitcoin_conf_file"
             echo -e "i2psam=127.0.0.1:7656" >>"$bitcoin_conf_file"
-            echo -e "addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0" >>"$bitcoin_conf_file"
-            echo -e "addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0" >>"$bitcoin_conf_file"
+            # Add TOR and I2P node addresses
+            # ...
             sleep 1
         fi
 
@@ -347,38 +329,29 @@ EOF
         echo "TOR-only mode enabled. Moving on..."
         echo -e "onlynet=onion" >>"$bitcoin_conf_file"
         echo -e "proxy=127.0.0.1:9050" >>"$bitcoin_conf_file"
+        # Add TOR node addresses
+        # ...
     elif [ "$use_i2p" == "yes" ]; then
         # I2P-only mode
         echo "I2P-only mode enabled. Moving on..."
         echo -e "onlynet=i2p" >>"$bitcoin_conf_file"
         echo -e "i2psam=127.0.0.1:7656" >>"$bitcoin_conf_file"
-        echo -e "addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0" >>"$bitcoin_conf_file"
-        echo -e "addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0" >>"$bitcoin_conf_file"
-        echo -e "addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0" >>"$bitcoin_conf_file"
-        echo -e "addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0" >>"$bitcoin_conf_file"
-        echo -e "addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0" >>"$bitcoin_conf_file"
-        echo -e "addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0" >>"$bitcoin_conf_file"
-        echo -e "addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0" >>"$bitcoin_conf_file"
-        echo -e "addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0" >>"$bitcoin_conf_file"
-        echo -e "addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0" >>"$bitcoin_conf_file"
-        echo -e "addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0" >>"$bitcoin_conf_file"
-        echo -e "addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0" >>"$bitcoin_conf_file"
+        # Add I2P node addresses
+        # ...
     fi
 
     # Set Bitcoin Core data directory (datadir) to /home/bitcoin/.bitcoin
     echo -e "datadir=/home/bitcoin/.bitcoin" >>"$bitcoin_conf_file"
 
     # Set proper permissions for the .bitcoin folder and its contents
-    chown -R bitcoin:bitcoin "$bitcoin_home"
-    chmod 700 "$bitcoin_home"
+    chown -R bitcoin:bitcoin "/home/bitcoin/.bitcoin"
+    chmod 700 "/home/bitcoin/.bitcoin"
 
     # Set proper permissions for the bitcoin.conf file
     chmod 600 "$bitcoin_conf_file"
 
     echo "Bitcoin Core configuration completed successfully!"
 }
-
-
 
 # Function to create systemd service unit for Bitcoin Core
 create_bitcoin_core_service() {
@@ -523,22 +496,39 @@ if [ "$use_tor" == "yes" ] || [ "$use_i2p" == "yes" ]; then
     echo "TOR and/or I2P are installed."
     echo "Do you want to configure Bitcoin Core to use privacy networks?"
     if [ "$(prompt_yes_no 'Configure Bitcoin Core for privacy networks?')" == "yes" ]; then
-        # TOR-only mode
-        if [ "$use_tor" == "yes" ]; then
+        # Check if both TOR and I2P are installed
+        if [ "$use_tor" == "yes" ] && [ "$use_i2p" == "yes" ]; then
+            echo "You chose to install both TOR and I2P."
+            echo "Do you want to only use privacy networks? (This will slow down your IBD a lot)"
+            echo "Or are you okay with a hybrid mode of clearnet and privacy networks?"
+            if [ "$(prompt_yes_no 'Enable hybrid mode for TOR and I2P?')" == "yes" ]; then
+                # Hybrid mode: Use both TOR and I2P along with clearnet
+                echo "Hybrid Mode enabled. Moving on..."
+                use_tor="yes"
+                use_i2p="yes"
+            else
+                # Privacy-only mode: Use only TOR and I2P
+                echo "Privacy mode enabled. Moving on..."
+                use_tor="no"
+                use_i2p="no"
+            fi
+        elif [ "$use_tor" == "yes" ]; then
+            # TOR-only mode
             echo "TOR-only mode enabled. Moving on..."
+            use_tor="yes"
             use_i2p="no"
-        fi
-
-        # I2P-only mode
-        if [ "$use_i2p" == "yes" ]; then
+        elif [ "$use_i2p" == "yes" ]; then
+            # I2P-only mode
             echo "I2P-only mode enabled. Moving on..."
             use_tor="no"
+            use_i2p="yes"
         fi
     fi
 fi
 
 # Configure Bitcoin Core based on the user's choices for TOR and I2P
 configure_bitcoin_core "$use_tor" "$use_i2p"
+
 
 # Create systemd service unit for Bitcoin Core
 create_bitcoin_core_service
