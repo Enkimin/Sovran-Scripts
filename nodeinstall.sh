@@ -203,7 +203,7 @@ download_and_install_bitcoin_core() {
     fi
 
     # Verify the cryptographic checksum of the downloaded source code
-    verify_checksum
+    verify_checksum "$node_folder/bitcoin-$latest_version"
 
     # Navigate into the Bitcoin Core directory
     echo "Entering the Bitcoin Core directory..."
@@ -229,14 +229,24 @@ download_and_install_bitcoin_core() {
 
 # Function to verify cryptographic checksum of the downloaded Bitcoin Core source code
 verify_checksum() {
-    local checksum_file="/home/bitcoin/node/bitcoin-${latest_version}/SHA256SUMS.asc"
-    local source_code_file="/home/bitcoin/node/bitcoin-${latest_version}/bitcoin-${latest_version}.tar.gz"
-    local bitcoin_core_dir="/home/bitcoin/node/bitcoin-${latest_version}"
+    local bitcoin_core_dir="$1"
+    local checksum_file="$bitcoin_core_dir/SHA256SUMS.asc"
+    local source_code_file="$bitcoin_core_dir/bitcoin-${latest_version}.tar.gz"
 
     # Download the Bitcoin Core signature file
     echo "Downloading Bitcoin Core signature file..."
     sleep 1
-    (cd "$bitcoin_core_dir" && gpg --keyserver keyserver.ubuntu.com --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964)
+    gpg --keyserver keyserver.ubuntu.com --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964
+
+    # Check if the GPG key retrieval was successful
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Failed to retrieve GPG key for Bitcoin Core. Aborting the installation."
+        exit 1
+    fi
+
+    # Verify the signature of the Bitcoin Core source code
+    echo "Verifying the cryptographic signature of the Bitcoin Core source code..."
+    sleep 1
     gpg --verify "$checksum_file"
 
     # Check if the checksum file exists before proceeding
@@ -248,7 +258,7 @@ verify_checksum() {
     # Verify the checksum of the Bitcoin Core source code
     echo "Verifying the cryptographic checksum of the Bitcoin Core source code..."
     sleep 1
-    (cd "$bitcoin_core_dir" && sha256sum -c --ignore-missing "$checksum_file" --status)
+    sha256sum -c --ignore-missing "$checksum_file" --status
     if [ $? -ne 0 ]; then
         echo "ERROR: Cryptographic checksum verification failed. Aborting the installation."
         exit 1
