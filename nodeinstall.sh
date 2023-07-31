@@ -236,7 +236,7 @@ verify_checksum() {
     # Download the Bitcoin Core signature file
     echo "Downloading Bitcoin Core signature file..."
     sleep 1
-    gpg --keyserver keyserver.ubuntu.com --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964
+    gpg --keyserver hkps://keys.openpgp.org --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964
 
     # Check if the GPG key retrieval was successful
     if [ $? -ne 0 ]; then
