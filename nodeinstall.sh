@@ -424,7 +424,7 @@ PrivateTmp=true
 TimeoutStopSec=480s
 TimeoutStartSec=480s
 StartLimitInterval=480s
-StartLimitBurst=5
+StartLimitBurst=10
 
 [Install]
 WantedBy=multi-user.target
@@ -511,17 +511,19 @@ else
     echo "I2P installation skipped."
 fi
 
-# Inform the user before proceeding to Bitcoin Core installation
-echo "Moving on to Bitcoin Core installation..."
+# Check if the Bitcoin Core binary is already installed in /usr/local/bin
+if command -v bitcoind &>/dev/null; then
+    echo "Bitcoin Core is already installed. Skipping download and installation..."
+else
+    # Install required repositories for Bitcoin Core
+    install_bitcoin_core_dependencies
 
-# Install required repositories for Bitcoin Core
-install_bitcoin_core_dependencies
+    # Download and install Bitcoin Core
+    download_and_install_bitcoin_core
 
-# Download and install Bitcoin Core
-download_and_install_bitcoin_core
-
-# Copy Bitcoin Core binary to /usr/local/bin and set proper ownership and permissions
-copy_bitcoin_core_binary "$latest_version"
+    # Copy Bitcoin Core binary to /usr/local/bin and set proper ownership and permissions
+    copy_bitcoin_core_binary "$latest_version"
+fi
 
 # Determine if TOR and I2P are installed and set the variables accordingly
 use_tor="no"
