@@ -236,7 +236,7 @@ verify_checksum() {
     # Download the Bitcoin Core signature file
     echo "Downloading Bitcoin Core signature file..."
     sleep 1
-    gpg --keyserver keyserver.ubuntu.com --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964 --directory "$bitcoin_core_dir"
+    (cd "$bitcoin_core_dir" && gpg --keyserver keyserver.ubuntu.com --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964)
     gpg --verify "$checksum_file"
 
     # Check if the checksum file exists before proceeding
@@ -248,12 +248,13 @@ verify_checksum() {
     # Verify the checksum of the Bitcoin Core source code
     echo "Verifying the cryptographic checksum of the Bitcoin Core source code..."
     sleep 1
-    sha256sum -c --ignore-missing "$checksum_file" --status
+    (cd "$bitcoin_core_dir" && sha256sum -c --ignore-missing "$checksum_file" --status)
     if [ $? -ne 0 ]; then
         echo "ERROR: Cryptographic checksum verification failed. Aborting the installation."
         exit 1
     fi
 }
+
 
 
 # Function to configure Bitcoin Core based on user choices and add default settings
