@@ -194,16 +194,27 @@ download_and_install_bitcoin_core() {
         exit 1
     fi
 
-    # Clone the Bitcoin Core repository from GitHub
-    echo "Cloning Bitcoin Core repository..."
+    # Download the Bitcoin Core source code tarball
+    echo "Downloading Bitcoin Core source code..."
     sleep 1
-    if ! git clone --depth 1 --branch "$latest_version" https://github.com/bitcoin/bitcoin.git "$node_folder/bitcoin-$latest_version"; then
-        echo "Failed to clone the Bitcoin Core repository. Aborting the installation."
-        exit 1
-    fi
+    local bitcoin_tarball_url="https://github.com/bitcoin/bitcoin/archive/$latest_version.tar.gz"
+    local bitcoin_tarball="$node_folder/bitcoin-$latest_version.tar.gz"
+    curl -L "$bitcoin_tarball_url" -o "$bitcoin_tarball"
+
+    # Download the SHA256 checksum file
+    echo "Downloading Bitcoin Core SHA256 checksums..."
+    sleep 1
+    local checksum_url="https://bitcoincore.org/bin/bitcoin-core-$latest_version/SHA256SUMS.asc"
+    local checksum_file="$node_folder/SHA256SUMS.asc"
+    curl -L "$checksum_url" -o "$checksum_file"
 
     # Verify the cryptographic checksum of the downloaded source code
-    verify_checksum "$node_folder/bitcoin-$latest_version"
+    verify_checksum "$node_folder" "$latest_version"
+
+    # Extract the Bitcoin Core source code
+    echo "Extracting Bitcoin Core source code..."
+    sleep 1
+    tar -xzf "$bitcoin_tarball" -C "$node_folder"
 
     # Navigate into the Bitcoin Core directory
     echo "Entering the Bitcoin Core directory..."
