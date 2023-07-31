@@ -152,9 +152,9 @@ install_i2p() {
 
 # Function to enable I2Pd's web console
 enable_i2pd_web_console() {
-    # Enable I2Pd's web console using i2prouter
+    # Enable I2Pd's web console using i2prouter as the 'bitcoin' user
     echo "Enabling I2Pd Web Console..."
-    i2prouter enablewebconsole
+    su - bitcoin -c "i2prouter console start"
 
     echo "I2Pd Web Console enabled successfully."
 }
@@ -417,6 +417,19 @@ else
     echo "Please set the password for the 'bitcoin' user. You'll need this if you want to log into the user."
     passwd bitcoin
 fi
+
+# Ensure that /home/bitcoin directory exists and set proper permissions
+bitcoin_home="/home/bitcoin"
+if [ ! -d "$bitcoin_home" ]; then
+    echo "Creating /home/bitcoin directory..."
+    mkdir -p "$bitcoin_home"
+fi
+
+# Set the appropriate ownership and permissions for the /home/bitcoin directory
+echo "Setting ownership and permissions for /home/bitcoin..."
+chown -R bitcoin:bitcoin "$bitcoin_home"
+chmod 700 "$bitcoin_home"
+
 
 # Prompt the user if they want to install TOR
 if [ "$(prompt_yes_no 'Do you want to install TOR?')" == "yes" ]; then
