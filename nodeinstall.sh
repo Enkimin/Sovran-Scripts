@@ -521,22 +521,36 @@ if command -v i2pd &>/dev/null; then
 fi
 
 # Prompt the user if they want to use TOR only if it is installed
-if [ "$use_tor" == "yes" ]; then
+if [ "$use_tor" == "yes" ] && [ "$use_i2p" == "no" ]; then
     echo "Looks like you have TOR installed."
     echo "Do you want to enable TOR only mode? This will slow down your IBD but is more private."
     if [ "$(prompt_yes_no 'Enable TOR only mode?')" == "yes" ]; then
         # TOR-only mode
-        use_i2p="no"
+        echo "TOR-only mode enabled. Moving on..."
+        use_tor="yes"
     fi
 fi
 
 # Prompt the user if they want to use I2P only if it is installed
-if [ "$use_i2p" == "yes" ]; then
+if [ "$use_i2p" == "yes" ] && [ "$use_tor" == "no" ]; then
     echo "Looks like you have I2P installed."
     echo "Do you want to enable I2P only mode? This will slow down your IBD but is more private."
     if [ "$(prompt_yes_no 'Enable I2P only mode?')" == "yes" ]; then
         # I2P-only mode
-        use_tor="no"
+        echo "I2P-only mode enabled. Moving on..."
+        use_i2p="yes"
+    fi
+fi
+
+# Prompt the user if they want to use TOR and I2P hybrid mode if both are installed
+if [ "$use_tor" == "yes" ] && [ "$use_i2p" == "yes" ]; then
+    echo "You have both TOR and I2P installed."
+    echo "Do you want to use a hybrid mode of clearnet, TOR, and I2P?"
+    if [ "$(prompt_yes_no 'Enable hybrid mode for TOR and I2P?')" == "yes" ]; then
+        # Hybrid mode: Use both TOR and I2P along with clearnet
+        echo "Hybrid Mode enabled. Moving on..."
+        use_tor="yes"
+        use_i2p="yes"
     fi
 fi
 
