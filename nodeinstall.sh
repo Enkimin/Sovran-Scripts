@@ -557,10 +557,6 @@ if [ "$use_tor" == "yes" ] || [ "$use_i2p" == "yes" ]; then
     fi
 fi
 
-# Debug statements to check the values of use_tor and use_i2p
-echo "use_tor: $use_tor"
-echo "use_i2p: $use_i2p"
-
 # Configure Bitcoin Core based on the user's choices for TOR and I2P
 configure_bitcoin_core "$use_tor" "$use_i2p"
 
