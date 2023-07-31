@@ -1,13 +1,13 @@
 #!/bin/bash
-#This is a script to install Bitcoin Core and Lightning. 
+#This is a script to install Bitcoin Core and Lightning.
 set -e
 
 # Function to check if a package is installed
 is_package_installed() {
     if dpkg -l "$1" 2>/dev/null | grep -q "^ii"; then
-        return 0  # Package is installed
+        return 0 # Package is installed
     else
-        return 1  # Package is not installed
+        return 1 # Package is not installed
     fi
 }
 
@@ -75,7 +75,7 @@ install_tor() {
             apt install -y tor-geoipdb
 
             echo "Adding the user 'bitcoin' to the 'debian-tor' group to allow TOR access..."
-            groupadd -f debian-tor  # Create the group if it doesn't exist
+            groupadd -f debian-tor # Create the group if it doesn't exist
             usermod -a -G debian-tor bitcoin
 
             echo "Setting correct permissions for the TOR configuration directory..."
@@ -93,7 +93,6 @@ install_tor() {
         fi
     fi
 }
-
 
 # Function to check if the I2P repository entry already exists
 is_i2p_repository_installed() {
@@ -149,7 +148,6 @@ install_i2p() {
     fi
 }
 
-
 # Function to enable I2Pd's web console
 enable_i2pd_web_console() {
     # Enable I2Pd's web console using i2prouter as the 'bitcoin' user
@@ -174,7 +172,6 @@ install_bitcoin_core_dependencies() {
 
     apt install -y build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev libboost-thread-dev libboost-all-dev libzmq3-dev
 }
-
 
 # Function to download and install Bitcoin Core in the /home/bitcoin/node/ folder
 download_and_install_bitcoin_core() {
@@ -248,11 +245,10 @@ verify_checksum() {
     if [ $? -ne 0 ]; then
         echo "ERROR: Cryptographic checksum verification failed. Aborting the installation."
         exit 1
+    else
+        echo "Cryptographic checksum verification successful!"
     fi
 }
-
-
-
 
 # Function to configure Bitcoin Core based on user choices and add default settings
 configure_bitcoin_core() {
@@ -261,7 +257,7 @@ configure_bitcoin_core() {
     local use_i2p="$2"
 
     echo "Configuring Bitcoin Core..."
-    sleep 1 
+    sleep 1
 
     # Create .bitcoin folder in the user's home directory
     local bitcoin_data_dir="/home/bitcoin/.bitcoin"
@@ -335,7 +331,6 @@ configure_bitcoin_core() {
     echo "Bitcoin Core configuration completed successfully!"
 }
 
-
 # Function to create systemd service unit for Bitcoin Core
 create_bitcoin_core_service() {
 
@@ -374,7 +369,6 @@ EOF
     sleep 1
     systemctl daemon-reload
 }
-
 
 # Function to start and enable Bitcoin Core service
 start_and_enable_bitcoin_core() {
@@ -434,7 +428,6 @@ fi
 echo "Setting ownership and permissions for /home/bitcoin..."
 chown -R bitcoin:bitcoin "$bitcoin_home"
 chmod 700 "$bitcoin_home"
-
 
 # Prompt the user if they want to install TOR
 if [ "$(prompt_yes_no 'Do you want to install TOR?')" == "yes" ]; then
