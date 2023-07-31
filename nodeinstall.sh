@@ -301,7 +301,7 @@ EOF
 
     # Check if both TOR and I2P are installed
     if [ "$use_tor" == "yes" ] && [ "$use_i2p" == "yes" ]; then
-        echo "You chose to install TOR and I2P."
+        echo "You chose to install both TOR and I2P."
         echo "Do you want to only use privacy networks? (This will slow down your IBD a lot)"
         echo "Or are you okay with a hybrid mode of clearnet and privacy networks?"
         if [ "$(prompt_yes_no 'Enable hybrid mode for TOR and I2P?')" == "yes" ]; then
@@ -345,15 +345,11 @@ EOF
     elif [ "$use_tor" == "yes" ]; then
         # TOR-only mode
         echo "TOR-only mode enabled. Moving on..."
-        sleep 1
         echo -e "onlynet=onion" >>"$bitcoin_conf_file"
         echo -e "proxy=127.0.0.1:9050" >>"$bitcoin_conf_file"
-
-    # Check if only I2P is installed
     elif [ "$use_i2p" == "yes" ]; then
         # I2P-only mode
         echo "I2P-only mode enabled. Moving on..."
-        sleep 1 
         echo -e "onlynet=i2p" >>"$bitcoin_conf_file"
         echo -e "i2psam=127.0.0.1:7656" >>"$bitcoin_conf_file"
         echo -e "addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0" >>"$bitcoin_conf_file"
@@ -381,6 +377,8 @@ EOF
 
     echo "Bitcoin Core configuration completed successfully!"
 }
+
+
 
 # Function to create systemd service unit for Bitcoin Core
 create_bitcoin_core_service() {
@@ -520,42 +518,27 @@ if command -v i2pd &>/dev/null; then
     use_i2p="yes"
 fi
 
-# Prompt the user if they want to use TOR only if it is installed
-if [ "$use_tor" == "yes" ]; then
-    echo "Looks like you have TOR installed."
-    echo "Do you want to enable TOR only mode? This will slow down your IBD but is more private."
-    if [ "$(prompt_yes_no 'Enable TOR only mode?')" == "yes" ]; then
+# Prompt the user if they want to use TOR and/or I2P if they are installed
+if [ "$use_tor" == "yes" ] || [ "$use_i2p" == "yes" ]; then
+    echo "TOR and/or I2P are installed."
+    echo "Do you want to configure Bitcoin Core to use privacy networks?"
+    if [ "$(prompt_yes_no 'Configure Bitcoin Core for privacy networks?')" == "yes" ]; then
         # TOR-only mode
-        use_i2p="no"
-    fi
-fi
+        if [ "$use_tor" == "yes" ]; then
+            echo "TOR-only mode enabled. Moving on..."
+            use_i2p="no"
+        fi
 
-# Prompt the user if they want to use I2P only if it is installed and not in TOR-only mode
-if [ "$use_i2p" == "yes" ] && [ "$use_tor" == "no" ]; then
-    echo "Looks like you have I2P installed."
-    echo "Do you want to enable I2P only mode? This will slow down your IBD but is more private."
-    if [ "$(prompt_yes_no 'Enable I2P only mode?')" == "yes" ]; then
         # I2P-only mode
-        use_tor="no"
-    fi
-fi
-
-# Prompt the user if they want to use TOR and I2P hybrid mode if both are installed and not in any previous modes
-if [ "$use_tor" == "no" ] && [ "$use_i2p" == "no" ]; then
-    if [ "$(command -v tor &>/dev/null && command -v i2pd &>/dev/null)" ]; then
-        echo "You have both TOR and I2P installed."
-        echo "Do you want to use a hybrid mode of clearnet, TOR, and I2P?"
-        if [ "$(prompt_yes_no 'Enable hybrid mode for TOR and I2P?')" == "yes" ]; then
-            # Hybrid mode: Use both TOR and I2P along with clearnet
-            use_tor="yes"
-            use_i2p="yes"
+        if [ "$use_i2p" == "yes" ]; then
+            echo "I2P-only mode enabled. Moving on..."
+            use_tor="no"
         fi
     fi
 fi
 
 # Configure Bitcoin Core based on the user's choices for TOR and I2P
 configure_bitcoin_core "$use_tor" "$use_i2p"
-
 
 # Create systemd service unit for Bitcoin Core
 create_bitcoin_core_service
