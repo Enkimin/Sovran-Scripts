@@ -285,7 +285,7 @@ daemon=1
 daemonwait=1
 # Set database cache size in megabytes; machines sync faster with a larger cache.
 dbcache=600
-# Keep the transaction memory pool below <n> megabytes. 
+# Keep the transaction memory pool below <n> megabytes.
 maxmempool=500
 # Maintain a full transaction index, used by the getrawtransaction rpc call.
 txindex=1
@@ -302,7 +302,7 @@ EOF
     # Check if both TOR and I2P are installed
     if [ "$use_tor" == "yes" ] && [ "$use_i2p" == "yes" ]; then
         echo "You chose to install TOR and I2P."
-        echo "Do you want to only use privacy networks?(This will slow down your IBD a lot)"
+        echo "Do you want to only use privacy networks? (This will slow down your IBD a lot)"
         echo "Or are you okay with a hybrid mode of clearnet and privacy networks?"
         if [ "$(prompt_yes_no 'Enable hybrid mode for TOR and I2P?')" == "yes" ]; then
             # Hybrid mode: Use both TOR and I2P along with clearnet
@@ -353,7 +353,7 @@ EOF
     elif [ "$use_i2p" == "yes" ]; then
         # I2P-only mode
         echo "I2P-only mode enabled. Moving on..."
-        sleep 1
+        sleep 1 
         echo -e "onlynet=i2p" >>"$bitcoin_conf_file"
         echo -e "i2psam=127.0.0.1:7656" >>"$bitcoin_conf_file"
         echo -e "addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0" >>"$bitcoin_conf_file"
@@ -367,7 +367,6 @@ EOF
         echo -e "addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0" >>"$bitcoin_conf_file"
         echo -e "addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0" >>"$bitcoin_conf_file"
         echo -e "addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0" >>"$bitcoin_conf_file"
-
     fi
 
     # Set Bitcoin Core data directory (datadir) to /home/bitcoin/.bitcoin
