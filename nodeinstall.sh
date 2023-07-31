@@ -194,27 +194,16 @@ download_and_install_bitcoin_core() {
         exit 1
     fi
 
-    # Download the Bitcoin Core source code tarball
-    echo "Downloading Bitcoin Core source code..."
+    # Clone the Bitcoin Core repository from GitHub
+    echo "Cloning Bitcoin Core repository..."
     sleep 1
-    local bitcoin_tarball_url="https://github.com/bitcoin/bitcoin/archive/$latest_version.tar.gz"
-    local bitcoin_tarball="$node_folder/bitcoin-$latest_version.tar.gz"
-    curl -L "$bitcoin_tarball_url" -o "$bitcoin_tarball"
-
-    # Download the SHA256 checksum file
-    echo "Downloading Bitcoin Core SHA256 checksums..."
-    sleep 1
-    local checksum_url="https://bitcoincore.org/bin/bitcoin-core-$latest_version/SHA256SUMS.asc"
-    local checksum_file="$node_folder/SHA256SUMS.asc"
-    curl -L "$checksum_url" -o "$checksum_file"
+    if ! git clone --depth 1 --branch "$latest_version" https://github.com/bitcoin/bitcoin.git "$node_folder/bitcoin-$latest_version"; then
+        echo "Failed to clone the Bitcoin Core repository. Aborting the installation."
+        exit 1
+    fi
 
     # Verify the cryptographic checksum of the downloaded source code
     verify_checksum "$node_folder" "$latest_version"
-
-    # Extract the Bitcoin Core source code
-    echo "Extracting Bitcoin Core source code..."
-    sleep 1
-    tar -xzf "$bitcoin_tarball" -C "$node_folder"
 
     # Navigate into the Bitcoin Core directory
     echo "Entering the Bitcoin Core directory..."
@@ -240,31 +229,16 @@ download_and_install_bitcoin_core() {
 
 # Function to verify cryptographic checksum of the downloaded Bitcoin Core source code
 verify_checksum() {
-    local bitcoin_core_dir="$1"
-    local checksum_file="$bitcoin_core_dir/SHA256SUMS.asc"
-    local source_code_file="$bitcoin_core_dir/bitcoin-${latest_version}.tar.gz"
+    local node_folder="$1"
+    local latest_version="$2"
+    local checksum_file="${node_folder}/bitcoin-${latest_version}/SHA256SUMS.asc"
+    local source_code_file="${node_folder}/bitcoin-${latest_version}/bitcoin-${latest_version}.tar.gz"
 
     # Download the Bitcoin Core signature file
     echo "Downloading Bitcoin Core signature file..."
     sleep 1
-    gpg --keyserver hkps://keys.openpgp.org --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964
-
-    # Check if the GPG key retrieval was successful
-    if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to retrieve GPG key for Bitcoin Core. Aborting the installation."
-        exit 1
-    fi
-
-    # Verify the signature of the Bitcoin Core source code
-    echo "Verifying the cryptographic signature of the Bitcoin Core source code..."
-    sleep 1
-    gpg --verify "$checksum_file"
-
-    # Check if the checksum file exists before proceeding
-    if [ ! -f "$checksum_file" ]; then
-        echo "ERROR: Cryptographic checksum file not found. Aborting the installation."
-        exit 1
-    fi
+    gpg --keyserver keyserver.ubuntu.com --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964
+    gpg --verify "$checksum_file" "${source_code_file}.sig"  # Updated to provide the signature file as well
 
     # Verify the checksum of the Bitcoin Core source code
     echo "Verifying the cryptographic checksum of the Bitcoin Core source code..."
@@ -275,7 +249,6 @@ verify_checksum() {
         exit 1
     fi
 }
-
 
 
 # Function to configure Bitcoin Core based on user choices and add default settings
