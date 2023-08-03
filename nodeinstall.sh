@@ -721,7 +721,7 @@ ask_install_lnd() {
 
 # Ride the lightning dashboard stuff
 
-# Function to install RTL (Ride The Lightning)
+# Install RTL dash (Ride The Lightning)
 install_rtl() {
     echo "Checking for NPM (Node Package Manager)..."
     if ! command -v npm &>/dev/null; then
@@ -746,6 +746,111 @@ install_rtl() {
 
     echo "RTL has been installed successfully."
     sleep 1
+}
+
+# Configure RTL and plug it into systemd
+configure_rtl() {
+    echo "Configuring RTL..."
+    sleep 1
+
+    # Get the computer's LAN IPv4 address
+    lan_address=$(ip -4 addr show | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v '127.0.0.1' | head -1)
+
+    # Ask the user about enabling FIAT conversion
+    echo "Do you want to enable FIAT conversion? (Type 'yes' for enabling FIAT conversion, 'no' otherwise):"
+    read -r enable_fiat
+
+    rtl_folder="/home/bitcoin/node/RTL"
+    rtl_config_file="$rtl_folder/RTL-Config.json"
+
+    cat <<EOF > "$rtl_config_file"
+        {
+        "multiPass": "password",
+        "port": "3000",
+        "defaultNodeIndex": 1,
+        "dbDirectoryPath": "/home/bitcoin/node/RTL/data",
+        "SSO": {
+            "rtlSSO": 0
+        },
+        "nodes": [
+            {
+            "index": 1,
+            "lnNode": "LND",
+            "lnImplementation": "LND",
+            "Authentication": {
+                "macaroonPath": "/home/bitcoin/.lnd/data/chain/bitcoin/mainnet"
+            },
+            "Settings": {
+                "userPersona": "OPERATOR",
+                "themeMode": "NIGHT",
+                "themeColor": "PURPLE",
+                "channelBackupPath": "/home/bitcoin/bitcoin/node/RTL/backups",
+                "bitcoindConfigPath": "/home/bitcoin/.bitcoin/bitcoin.conf",
+                "logLevel": "INFO",
+                "fiatConversion": "$enable_fiat",
+                "unannouncedChannels": true,
+                "lnServerUrl": "https://$lan_address:8080"
+            }
+            }
+        ]
+        }
+EOF
+
+    echo "RTL configuration file created: $rtl_config_file"
+
+    # Create the data folder for RTL
+    rtl_data_folder="/home/bitcoin/node/RTL/data"
+    mkdir -p "$rtl_data_folder"
+    chown bitcoin:bitcoin "$rtl_data_folder"
+    echo "RTL data folder created: $rtl_data_folder"
+
+    echo "RTL has been configured."
+
+    # Create and start the systemd service for RTL
+    rtl_systemd_file="/etc/systemd/system/rtl.service"
+    cat <<EOF > "$rtl_systemd_file"
+        [Unit]
+        Description=Ride The Lightning (RTL) Bitcoin Lightning Network GUI
+        After=bitcoind.service lnd.service
+
+        [Service]
+        User=bitcoin
+        Group=bitcoin
+        Type=simple
+        ExecStart=/usr/bin/npm --prefix /home/bitcoin/node/RTL run start
+
+        [Install]
+        WantedBy=multi-user.target
+EOF
+
+    echo "Systemd service file created: $rtl_systemd_file"
+    sudo systemctl enable rtl
+    sudo systemctl start rtl
+
+    echo "RTL service has been started."
+    echo "You can access RTL at http://localhost:8080 or http://$lan_address:8080"
+}
+
+# Final systems check and exit. 
+check_services() {
+    echo "Checking if all required services are running..."
+    if sudo systemctl is-active --quiet bitcoind && sudo systemctl is-active --quiet lnd && sudo systemctl is-active --quiet rtl; then
+        echo "Woot! Core, LND, and RTL are all running. Welcome to your node."
+        echo "You can access RTL at http://localhost:8080 or http://$lan_address:8080"
+        exit 0
+    else
+        echo "Oops, it looks like the following service(s) are not running:"
+        if ! sudo systemctl is-active --quiet bitcoind; then
+            echo "bitcoind"
+        fi
+        if ! sudo systemctl is-active --quiet lnd; then
+            echo "lnd"
+        fi
+        if ! sudo systemctl is-active --quiet rtl; then
+            echo "rtl"
+        fi
+        exit 1
+    fi
 }
 
 # Main script starts here
@@ -872,8 +977,12 @@ start_and_enable_bitcoin_core
 # Lightning instalation
 ask_install_lnd #asks user about LND. If yes checks for and installs golang, and builds LND.
 
+configure_rtl # makes the RTL config file and plugs it into systemd
+
+check_services # Final systems check and exit
+
 # Inform the user that the script has completed successfully
-echo "Enki's Bitcoin Core + Lightning installation script has completed successfully."
+center_text "Thanks for using my script and thank YOU for running a Bitcoin/Lightning Full node you're helping to decentralize the network even further!"
 
 # Exit the script with a success status code
 exit 0
