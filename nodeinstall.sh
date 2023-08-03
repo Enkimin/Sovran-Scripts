@@ -12,7 +12,6 @@ is_package_installed() {
         return 1 # Package is not installed
     fi
 }
-
 # yes/no Prompt
 prompt_yes_no() {
     local question="$1"
@@ -40,7 +39,6 @@ prompt_yes_no() {
         esac
     done
 }
-
 # Center text
 center_text() {
     local text="$1"
@@ -481,7 +479,6 @@ EOF
     sudo systemctl restart bitcoind
     echo "bitcoind has been restarted."
 }
-
 # Function to configure LND and create its data folder
 configure_lnd() {
     echo "Configuring LND..."
@@ -677,7 +674,27 @@ EOF
     sudo systemctl enable lnd.service
     sudo systemctl start lnd.service
 }
+# Function to prompt the user to create a wallet
+prompt_create_wallet() {
+    echo "Now it's time to create your wallet. Please press any key to continue and create a new wallet."
 
+    # Wait for user input to continue
+    read -n 1 -s -r -p ""
+    echo ""
+
+    echo -n "Please remember the password you enter for your wallet: "
+    read -s wallet_password
+    echo ""
+
+    # Run the lncli create command
+    lncli create
+
+    # Create the wallet password file
+    wallet_password_file="/home/bitcoin/.lnd/wallet_password"
+    echo "$wallet_password" > "$wallet_password_file"
+    chown bitcoin:bitcoin "$wallet_password_file"
+    chmod 400 "$wallet_password_file"
+}
 # Asks about Lightning, Installs golang
 ask_install_lnd() {
     if [ "$(prompt_yes_no 'Core has been insatlled and configured! Install Lightning (LND)?')" == "yes" ]; then
@@ -687,10 +704,48 @@ ask_install_lnd() {
         install_go  # Install Go if it's not already installed
         install_lnd # Call the function to install LND
         configure_lnd # Call the function to configure LND and create its data folder
+        prompt_create_wallet # Makes a wallet and adds the auto unlock file.
 
+        echo "LND is now installed and configured."
+        if [ "$(prompt_yes_no 'Do you want to install RTL?')" == "yes" ]; then
+            echo "Proceeding with RTL installation..."
+            # Call the function to install RTL (you can define this function)
+            install_rtl
+        else
+            echo "Skipping RTL installation."
+        fi
     else
         echo "Skipping Lightning installation."
     fi
+}
+
+# Ride the lightning dashboard stuff
+
+# Function to install RTL (Ride The Lightning)
+install_rtl() {
+    echo "Checking for NPM (Node Package Manager)..."
+    if ! command -v npm &>/dev/null; then
+        echo "NPM not found. Installing NPM..."
+        sleep 1
+        sudo apt update
+        sudo apt install -y npm
+    else
+        echo "NPM is already installed."
+        sleep 1
+    fi
+
+    rtl_folder="/home/bitcoin/node/RTL"
+    echo "Cloning RTL into $rtl_folder..."
+    git clone https://github.com/Ride-The-Lightning/RTL.git "$rtl_folder"
+
+    echo "Entering the RTL folder..."
+    cd "$rtl_folder"
+
+    echo "Running npm install..."
+    npm install --omit=dev
+
+    echo "RTL has been installed successfully."
+    sleep 1
 }
 
 # Main script starts here
