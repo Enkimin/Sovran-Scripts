@@ -2,7 +2,9 @@
 #This is a script to install Bitcoin Core and Lightning.
 set -e
 
-# Function to check if a package is installed
+#Global Functions.
+
+# Install Check.
 is_package_installed() {
     if dpkg -l "$1" 2>/dev/null | grep -q "^ii"; then
         return 0 # Package is installed
@@ -11,7 +13,7 @@ is_package_installed() {
     fi
 }
 
-# Function to prompt the user with a yes/no question and return their choice
+# yes/no Prompt
 prompt_yes_no() {
     local question="$1"
     local default_choice="${2:-yes}"
@@ -39,12 +41,22 @@ prompt_yes_no() {
     done
 }
 
-# Function to check if the TOR repository entry already exists
+# Center text
+center_text() {
+    local text="$1"
+    local terminal_width
+    terminal_width=$(tput cols)
+    local padding=$(((terminal_width - ${#text}) / 2))
+    printf "%*s%s%*s\n" $padding "" "$text" $padding ""
+}
+
+# Network stuff
+
+# Checks if the TOR repository exists
 is_tor_repository_installed() {
     grep -q "deb http://deb.torproject.org/torproject.org $(lsb_release -cs) main" /etc/apt/sources.list.d/tor.list
 }
-
-# Function to install TOR
+# Installs TOR
 install_tor() {
     # Check if TOR is already installed
     if is_package_installed "tor"; then
@@ -102,13 +114,11 @@ install_tor() {
         fi
     fi
 }
-
-# Function to check if the I2P repository entry already exists
+# Checks if the I2P repository exists
 is_i2p_repository_installed() {
     grep -q "deb https://repo.i2pd.xyz $(lsb_release -cs) main" /etc/apt/sources.list.d/i2pd.list
 }
-
-# Function to install I2P
+# Installs I2P
 install_i2p() {
     # Check if I2P is already installed
     if is_package_installed "i2p"; then
@@ -151,7 +161,9 @@ install_i2p() {
     fi
 }
 
-# Function to install required repositories for Bitcoin Core
+#Bitocin Stuff
+
+# Installs Core's dependencies
 install_bitcoin_core_dependencies() {
     echo "Installing required repositories for Bitcoin Core..."
     sleep 1
@@ -166,8 +178,7 @@ install_bitcoin_core_dependencies() {
 
     apt install -y build-essential libtool autotools-dev automake pkg-config bsdmainutils python3 libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev libboost-thread-dev libboost-all-dev libzmq3-dev
 }
-
-# Function to download and install Bitcoin Core in the /home/bitcoin/node/ folder
+# Download's and installs Bitcoin Core
 download_and_install_bitcoin_core() {
     local node_folder="/home/bitcoin/node"
 
@@ -217,8 +228,7 @@ download_and_install_bitcoin_core() {
     echo "Bitcoin Core installation completed successfully!"
     sleep 1
 }
-
-# Function to verify cryptographic checksum of the downloaded Bitcoin Core source code
+# Verifys cryptographic checksum of Bitcoin Core source code (This gets called in the download and insatll fucntion)
 verify_checksum() {
     local node_folder="$1"
     local latest_version="$2"
@@ -246,8 +256,7 @@ verify_checksum() {
         echo "Cryptographic checksum verification successful!"
     fi
 }
-
-# Function to copy Bitcoin Core binary to /usr/local/bin and set proper ownership and permissions
+# Copys Core's binary to /usr/local/bin and set proper ownership and permissions
 copy_bitcoin_core_binary() {
     local node_folder="/home/bitcoin/node"
     local latest_version="$1"
@@ -267,34 +276,40 @@ copy_bitcoin_core_binary() {
     echo "Bitcoin Core binary has been copied to /usr/local/bin and proper permissions have been set."
     sleep 1
 }
-
-# Function to create Bitcoin Core configuration
+# Creates Bitcoin Core conf
 create_bitcoin_conf() {
     local bitcoin_conf_file="/home/bitcoin/.bitcoin/bitcoin.conf"
     local network="$1" # clearnet, tor, i2p, or both
 
     # Load the common bitcoin.conf template
     cat >"$bitcoin_conf_file" <<EOF
-# [core]
-# Maintain coinstats index used by the gettxoutsetinfo RPC.
-coinstatsindex=1
-# Run in the background as a daemon and accept commands.
-daemon=1
-# Wait for initialization to be finished before exiting. This implies -daemon.
-daemonwait=1
-# Set database cache size in megabytes; machines sync faster with a larger cache.
-dbcache=600
-# Keep the transaction memory pool below <n> megabytes.
-maxmempool=500
-# Maintain a full transaction index, used by the getrawtransaction rpc call.
-txindex=1
-# Turn off serving SPV nodes
-nopeerbloomfilters=1
-peerbloomfilters=0
-# Don't accept deprecated multi-sig style
-permitbaremultisig=0
-# Reduce the log file size on restarts
-shrinkdebuglog=1
+        # [Main]
+
+        # Maintain coinstats index used by the gettxoutsetinfo RPC.
+        coinstatsindex=1
+
+        # Run in the background as a daemon and accept commands.
+        daemon=1
+        daemonwait=1
+
+        # Set database cache size in megabytes; machines sync faster with a larger cache.
+        dbcache=600
+
+        # Keep the transaction memory pool below <n> megabytes.
+        maxmempool=500
+
+        # Maintain a full transaction index, used by the getrawtransaction rpc call.
+        txindex=1
+
+        # Turn off serving SPV nodes
+        nopeerbloomfilters=1
+        peerbloomfilters=0
+        
+        # Don't accept deprecated multi-sig style
+        permitbaremultisig=0
+        
+        # Reduce the log file size on restarts
+        shrinkdebuglog=1
 EOF
 
     case "$network" in
@@ -304,51 +319,57 @@ EOF
     tor)
         # TOR configuration
         cat <<EOF >>"$bitcoin_conf_file"
-onlynet=onion
-proxy=127.0.0.1:9050
+        # [Network]
+        debug=tor
+        onlynet=onion
+        proxy=127.0.0.1:9050
 EOF
         ;;
     i2p)
         # I2P configuration
         cat <<EOF >>"$bitcoin_conf_file"
-onlynet=i2p
-i2psam=127.0.0.1:7656
-addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0
-addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0
-addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0
-addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0
-addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0
-addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0
-addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0
-addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0
-addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0
-addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0
-addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0
+        # [Network]
+        debug=i2p
+        onlynet=i2p
+        i2psam=127.0.0.1:7656
+        addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0
+        addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0
+        addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0
+        addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0
+        addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0
+        addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0
+        addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0
+        addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0
+        addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0
+        addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0
+        addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0
 EOF
         ;;
     both)
         # Both TOR and I2P configuration
         cat <<EOF >>"$bitcoin_conf_file"
-onlynet=onion,i2p
-proxy=127.0.0.1:9050
-i2psam=127.0.0.1:7656
-addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0
-addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0
-addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0
-addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0
-addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0
-addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0
-addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0
-addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0
-addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0
-addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0
-addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0
+        # [Network]
+        debug=tor
+        debug=i2p
+        onlynet=onion,i2p
+        proxy=127.0.0.1:9050
+        i2psam=127.0.0.1:7656
+        addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0
+        addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0
+        addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0
+        addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0
+        addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0
+        addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0
+        addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0
+        addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0
+        addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0
+        addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0
+        addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0
 EOF
         ;;
     esac
 }
-
-# Function to create systemd service unit for Bitcoin Core
+# Plugs Core into systemd
 create_bitcoin_core_service() {
 
     echo "Plugging Core into systemd"
@@ -356,25 +377,25 @@ create_bitcoin_core_service() {
     local service_file="/etc/systemd/system/bitcoind.service"
 
     cat <<EOF >"$service_file"
-[Unit]
-Description=Bitcoin daemon
+    [Unit]
+    Description=Bitcoin daemon
 
-After=network-online.target
-Wants=network-online.target
+    After=network-online.target
+    Wants=network-online.target
 
-[Service]
-Type=forking
-ExecStart=/usr/local/bin/bitcoind -conf=/home/bitcoin/.bitcoin/bitcoin.conf -pid=/run/bitcoind.pid
+    [Service]
+    Type=forking
+    ExecStart=/usr/local/bin/bitcoind -conf=/home/bitcoin/.bitcoin/bitcoin.conf -pid=/run/bitcoind.pid
 
-Restart=always
-PrivateTmp=true
-TimeoutStopSec=480s
-TimeoutStartSec=480s
-StartLimitInterval=480s
-StartLimitBurst=10
+    Restart=always
+    PrivateTmp=true
+    TimeoutStopSec=480s
+    TimeoutStartSec=480s
+    StartLimitInterval=480s
+    StartLimitBurst=10
 
-[Install]
-WantedBy=multi-user.target
+    [Install]
+    WantedBy=multi-user.target
 EOF
 
     echo "Bitcoin Core systemd service unit created."
@@ -384,25 +405,102 @@ EOF
     sleep 1
     systemctl daemon-reload
 }
-
-# Function to start and enable Bitcoin Core service
+# Starts and enables Bitcoin Core
 start_and_enable_bitcoin_core() {
     systemctl start bitcoind
     systemctl enable bitcoind
     echo "Bitcoin Core has been started and enabled as a systemd service."
 }
 
+# Lightning Stuff
+
+# Function to check if Go is installed and install the latest version if not present
+install_go() {
+    if command -v go &>/dev/null; then
+        echo "Go is already installed. Skipping installation."
+    else
+        echo "Go no found. Installing Go..."
+        sleep 1
+        # Determine the latest version of Go available
+        latest_go_version=$(curl -s https://golang.org/dl/ | grep -oP 'https://golang.org/dl/go([0-9.]+).linux-amd64.tar.gz' | head -1 | grep -oP 'go([0-9.]+)')
+        if [[ -z "$latest_go_version" ]]; then
+            echo "Failed to fetch the latest version of Go. Aborting the installation."
+            exit 1
+        fi
+
+        # Download and extract the latest version of Go
+        wget -q "https://golang.org/dl/$latest_go_version.linux-amd64.tar.gz" -P /tmp
+        tar -C /usr/local -xzf "/tmp/$latest_go_version.linux-amd64.tar.gz"
+
+        # Add Go binary directory to PATH
+        echo "export PATH=\$PATH:/usr/local/go/bin" >>/etc/profile
+        source /etc/profile
+
+        echo "Go installation completed successfully!"
+    fi
+}
+# Function to install LND
+install_lnd() {
+    echo "Checking the latest release of LND..."
+    latest_release=$(curl -s https://api.github.com/repos/lightningnetwork/lnd/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+
+    echo "Cloning LND into /home/bitcoin/node/lnd..."
+    git clone https://github.com/lightningnetwork/lnd /home/bitcoin/node/lnd
+
+    cd /home/bitcoin/node/lnd
+
+    echo "Checking out the latest release of LND (v$latest_release)..."
+    git checkout "v$latest_release"
+
+    echo "Building and installing LND..."
+    make install
+
+    echo "LND has been installed successfully."
+
+    # Edit the bitcoin.conf file using cat
+    echo "Editing the bitcoin.conf file..."
+    cat <<EOF >>/home/bitcoin/.bitcoin/bitcoin.conf
+    # [RPC]
+    debug=rpc
+    server=1
+    rpcbind=0.0.0.0
+    rpcport=8332
+    rpcauth='lnd:1628299163766bdce1b3b9d321955971$dfeb5a806808e3f5f31b46bc8289c79f27f679cfd41b9df1e154ab6588e10ad7'
+
+    # [zeromq]
+    zmqpubrawblock=tcp://127.0.0.1:28332
+    zmqpubrawtx=tcp://127.0.0.1:28333
+EOF
+
+    # Restart bitcoind
+    echo "Restarting bitcoind..."
+    sudo systemctl restart bitcoind
+    echo "bitcoind has been restarted."
+}
+# Asks about Lightning, Installs golang
+ask_install_lnd() {
+    if [ "$(prompt_yes_no 'Core has been insatlled and configured! Install Lightning (LND)?')" == "yes" ]; then
+        echo "Proceeding with Lightning (LND) installation..."
+        sleep 1
+        echo "Checking for and installing golang"
+        install_go  # Install Go if it's not already installed
+        install_lnd # Call the function to install LND
+    else
+        echo "Skipping Lightning installation."
+    fi
+}
+
 # Main script starts here
 
-# Check if the script is being run as root
+# Root Check
 if [ "$EUID" -ne 0 ]; then
     echo "Please run this script as root."
     exit 1
 fi
 
-# Custom ASCII art welcome message
+# Welcome ASCII art
 cat <<"EOF"
-!   .::::::.     ...     :::      .::.:::::::..     :::.     :::.    :::.    :::.    :::.    ...     :::::::-.  .,::::::      ::::::::::.   :::.       .,-:::::   :::  .
+!   .::::::.     ...     :::      .::.:::::::..     :::.     :::.    :::.    :::.    :::.    ...     :::::::-.  .,::::::      ::::::::::.   :::.       .,-:::::   :::  .   
 !  ;;;`    `  .;;;;;;;.  ';;,   ,;;;' ;;;;``;;;;    ;;`;;    `;;;;,  `;;;    `;;;;,  `;;; .;;;;;;;.   ;;,   `';,;;;;''''       `;;;```.;;;  ;;`;;    ,;;;'````'   ;;; .;;,.
 !  '[==/[[[[,,[[     \[[, \[[  .[[/    [[[,/[[['   ,[[ '[[,    [[[[[. '[[      [[[[[. '[[,[[     \[[, `[[     [[ [[cccc         `]]nnn]]'  ,[[ '[[,  [[[          [[[[[/'  
 !    '''    $$$$,     $$$  Y$c.$$"     $$$$$$c    c$$$cc$$$c   $$$ "Y$c$$      $$$ "Y$c$$$$$,     $$$  $$,    $$ $$""""          $$$""    c$$$cc$$$c $$$         _$$$$,    
@@ -410,15 +508,12 @@ cat <<"EOF"
 !    "YMmMY"   "YMMMMMP"     MP        MMMM   "W"  YMM   ""`   MMM     YM      MMM     YM  "YMMMMMP"   MMMMP"`   """"YUMMM       YMMMb     YMM   ""`   "YUMMMMMP" MMM "MMP"
 EOF
 
-# Additional welcome message
-echo "Thanks for using Enki's Bitcoin Core + lightning install script."
-echo "This script will walk you through installing Bitcoin Core, LND, RTL, TOR, and I2P on your machine."
-echo "To continue, hit any key."
-
-# Wait for the user to hit a key
-read -n 1 -s -r -p "Press any key to continue..."
-
-echo -e "\n"
+echo
+center_text "Thanks for using Enki's Bitcoin Core + lightning install script."
+center_text "This script will walk you through installing Bitcoin Core, LND, RTL, TOR, and I2P on your machine."
+center_text "To continue, hit any key."
+read -n 1 -s -r -p ""
+echo
 
 # Check if the user 'bitcoin' already exists
 if id "bitcoin" &>/dev/null; then
@@ -515,6 +610,9 @@ systemctl daemon-reload
 
 # Start and enable Bitcoin Core service
 start_and_enable_bitcoin_core
+
+# Lightning instalation
+ask_install_lnd #asks user about LND. If yes checks for and installs golang, and builds LND.
 
 # Inform the user that the script has completed successfully
 echo "Enki's Bitcoin Core + Lightning installation script has completed successfully."
