@@ -226,27 +226,38 @@ download_and_install_bitcoin_core() {
     echo "Bitcoin Core installation completed successfully!"
     sleep 1
 }
-# Verifys cryptographic checksum of Bitcoin Core source code (This gets called in the download and insatll fucntion)
+# Verifys cryptographic checksum of Bitcoin Core source code (This gets called in the download and install function)
 verify_checksum() {
     local node_folder="$1"
     local latest_version="$2"
     local checksum_file="${node_folder}/bitcoin-${latest_version}/SHA256SUMS.asc"
-    local source_code_file="${node_folder}/bitcoin-${latest_version}/bitcoin-${latest_version}.tar.gz"
 
     # Download the Bitcoin Core signature file
     echo "Downloading Bitcoin Core signature file..."
     sleep 1
     wget -q "https://bitcoincore.org/bin/bitcoin-core-${latest_version}/SHA256SUMS.asc" -P "$node_folder"
 
-    # Import Bitcoin Core developers' signing key
+    # Import Bitcoin Core developers' signing key (if not already imported)
     echo "Importing Bitcoin Core developers' signing key..."
     sleep 1
-    gpg --import bitcoin.asc
+    gpg --recv-keys 0x01EA5486DE18A882D4C2684590C8019E36C2E964
+
+    # Verify the signature of the SHA256SUMS.asc file
+    echo "Verifying the signature of the SHA256SUMS.asc file..."
+    sleep 1
+    gpg --verify "${checksum_file}"
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Signature verification of SHA256SUMS.asc failed. Aborting the installation."
+        exit 1
+    else
+        echo "Signature verification successful!"
+    fi
 
     # Verify the cryptographic checksum of the Bitcoin Core source code
     echo "Verifying the cryptographic checksum of the Bitcoin Core source code..."
     sleep 1
-    sha256sum -c --ignore-missing "$checksum_file"
+    cd "${node_folder}/bitcoin-${latest_version}"
+    sha256sum -c --ignore-missing "${checksum_file}"
     if [ $? -ne 0 ]; then
         echo "ERROR: Cryptographic checksum verification failed. Aborting the installation."
         exit 1
