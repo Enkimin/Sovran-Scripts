@@ -285,41 +285,44 @@ copy_bitcoin_core_binary() {
     echo "Bitcoin Core binary has been copied to /usr/local/bin and proper permissions have been set."
     sleep 1
 }
-# Creates Bitcoin Core conf
+# Make the Bitcoin conf file 
 create_bitcoin_conf() {
     local bitcoin_conf_file="/home/bitcoin/.bitcoin/bitcoin.conf"
     local network="$1" # clearnet, tor, i2p, or both
 
-    # Load the common bitcoin.conf template
-    cat >"$bitcoin_conf_file" <<EOF
-        # [Main]
+    # Check if the bitcoin.conf file exists
+    if [ ! -f "$bitcoin_conf_file" ]; then
+        # If the file does not exist, create it with the common template
+        cat >"$bitcoin_conf_file" <<EOF
+            # [Main]
 
-        # Maintain coinstats index used by the gettxoutsetinfo RPC.
-        coinstatsindex=1
+            # Maintain coinstats index used by the gettxoutsetinfo RPC.
+            coinstatsindex=1
 
-        # Run in the background as a daemon and accept commands.
-        daemon=1
-        daemonwait=1
+            # Run in the background as a daemon and accept commands.
+            daemon=1
+            daemonwait=1
 
-        # Set database cache size in megabytes; machines sync faster with a larger cache.
-        dbcache=600
+            # Set database cache size in megabytes; machines sync faster with a larger cache.
+            dbcache=600
 
-        # Keep the transaction memory pool below <n> megabytes.
-        maxmempool=500
+            # Keep the transaction memory pool below <n> megabytes.
+            maxmempool=500
 
-        # Maintain a full transaction index, used by the getrawtransaction rpc call.
-        txindex=1
+            # Maintain a full transaction index, used by the getrawtransaction rpc call.
+            txindex=1
 
-        # Turn off serving SPV nodes
-        nopeerbloomfilters=1
-        peerbloomfilters=0
-        
-        # Don't accept deprecated multi-sig style
-        permitbaremultisig=0
-        
-        # Reduce the log file size on restarts
-        shrinkdebuglog=1
+            # Turn off serving SPV nodes
+            nopeerbloomfilters=1
+            peerbloomfilters=0
+
+            # Don't accept deprecated multi-sig style
+            permitbaremultisig=0
+
+            # Reduce the log file size on restarts
+            shrinkdebuglog=1
 EOF
+    fi
 
     case "$network" in
     clearnet)
@@ -328,52 +331,52 @@ EOF
     tor)
         # TOR configuration
         cat <<EOF >>"$bitcoin_conf_file"
-        # [Network]
-        debug=tor
-        onlynet=onion
-        proxy=127.0.0.1:9050
+            # [Network]
+            debug=tor
+            onlynet=onion
+            proxy=127.0.0.1:9050
 EOF
         ;;
     i2p)
         # I2P configuration
         cat <<EOF >>"$bitcoin_conf_file"
-        # [Network]
-        debug=i2p
-        onlynet=i2p
-        i2psam=127.0.0.1:7656
-        addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0
-        addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0
-        addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0
-        addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0
-        addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0
-        addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0
-        addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0
-        addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0
-        addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0
-        addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0
-        addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0
+            # [Network]
+            debug=i2p
+            onlynet=i2p
+            i2psam=127.0.0.1:7656
+            addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0
+            addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0
+            addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0
+            addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0
+            addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0
+            addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0
+            addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0
+            addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0
+            addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0
+            addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0
+            addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0
 EOF
         ;;
     both)
         # Both TOR and I2P configuration
         cat <<EOF >>"$bitcoin_conf_file"
-        # [Network]
-        debug=tor
-        debug=i2p
-        onlynet=onion,i2p
-        proxy=127.0.0.1:9050
-        i2psam=127.0.0.1:7656
-        addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0
-        addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0
-        addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0
-        addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0
-        addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0
-        addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0
-        addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0
-        addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0
-        addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0
-        addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0
-        addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0
+            # [Network]
+            debug=tor
+            debug=i2p
+            onlynet=onion,i2p
+            proxy=127.0.0.1:9050
+            i2psam=127.0.0.1:7656
+            addnode=255fhcp6ajvftnyo7bwz3an3t4a4brhopm3bamyh2iu5r3gnr2rq.b32.i2p:0
+            addnode=27yrtht5b5bzom2w5ajb27najuqvuydtzb7bavlak25wkufec5mq.b32.i2p:0
+            addnode=2el6enckmfyiwbfcwsygkwksovtynzsigmyv3bzyk7j7qqahooua.b32.i2p:0
+            addnode=3gocb7wc4zvbmmebktet7gujccuux4ifk3kqilnxnj5wpdpqx2hq.b32.i2p:0
+            addnode=3tns2oov4tnllntotazy6umzkq4fhkco3iu5rnkxtu3pbfzxda7q.b32.i2p:0
+            addnode=4fcc23wt3hyjk3csfzcdyjz5pcwg5dzhdqgma6bch2qyiakcbboa.b32.i2p:0
+            addnode=4osyqeknhx5qf3a73jeimexwclmt42cju6xdp7icja4ixxguu2hq.b32.i2p:0
+            addnode=4umsi4nlmgyp4rckosg4vegd2ysljvid47zu7pqsollkaszcbpqq.b32.i2p:0
+            addnode=52v6uo6crlrlhzphslyiqblirux6olgsaa45ixih7sq5np4jujaa.b32.i2p:0
+            addnode=6j2ezegd3e2e2x3o3pox335f5vxfthrrigkdrbgfbdjchm5h4awa.b32.i2p:0
+            addnode=6n36ljyr55szci5ygidmxqer64qr24f4qmnymnbvgehz7qinxnla.b32.i2p:0
 EOF
         ;;
     esac
