@@ -42,9 +42,9 @@ prompt_yes_no() {
 # Center text
 center_text() {
     local text="$1"
-    local terminal_width
-    terminal_width=$(tput cols)
-    local padding=$(((terminal_width - ${#text}) / 2))
+    local terminal_width=${COLUMNS:-$(tput cols 2>/dev/null) 80} # Use COLUMNS or tput (with fallback)
+    local text_width=${#text}
+    local padding=$(((terminal_width - text_width) / 2))
     printf "%*s%s%*s\n" $padding "" "$text" $padding ""
 }
 
@@ -285,7 +285,7 @@ copy_bitcoin_core_binary() {
     echo "Bitcoin Core binary has been copied to /usr/local/bin and proper permissions have been set."
     sleep 1
 }
-# Make the Bitcoin conf file 
+# Make the Bitcoin conf file
 create_bitcoin_conf() {
     local bitcoin_conf_file="/home/bitcoin/.bitcoin/bitcoin.conf"
     local network="$1" # clearnet, tor, i2p, or both
@@ -509,7 +509,7 @@ configure_lnd() {
 
     # Generate LND configuration file
     lnd_config_file="/home/bitcoin/.lnd/lnd.conf"
-    cat <<EOF > "$lnd_config_file"
+    cat <<EOF >"$lnd_config_file"
         [Application Options]
         # Allow push payments
         accept-keysend=1
@@ -603,16 +603,16 @@ EOF
     while true; do
         read -rp "Do you want to use Tor only mode or hybrid mode? (Type 'yes' for Tor only mode, 'no' for hybrid mode): " tor_mode
         case $tor_mode in
-            [Yy]es)
-                echo "Enabling Tor mode in LND..."
-                ;;
-            [Nn]o)
-                echo "LND will be configured in hybrid mode (without Tor)."
-                ;;
-            *)
-                echo "Invalid input. Please type 'yes' for Tor only mode or 'no' for hybrid mode."
-                continue
-                ;;
+        [Yy]es)
+            echo "Enabling Tor mode in LND..."
+            ;;
+        [Nn]o)
+            echo "LND will be configured in hybrid mode (without Tor)."
+            ;;
+        *)
+            echo "Invalid input. Please type 'yes' for Tor only mode or 'no' for hybrid mode."
+            continue
+            ;;
         esac
         break
     done
@@ -622,7 +622,7 @@ EOF
         read -r tor_password
 
         # Set Tor configurations in LND conf file for Tor only mode
-        cat <<EOF >> "$lnd_config_file"
+        cat <<EOF >>"$lnd_config_file"
             [tor]
             tor.active=1
             tor.v3=1
@@ -644,7 +644,7 @@ EOF
         read -r tor_password
 
         # Set Tor configurations in LND conf file for hybrid mode
-        cat <<EOF >> "$lnd_config_file"
+        cat <<EOF >>"$lnd_config_file"
             [tor]
             tor.active=1
             tor.v3=1
@@ -705,7 +705,7 @@ prompt_create_wallet() {
 
     # Create the wallet password file
     wallet_password_file="/home/bitcoin/.lnd/wallet_password"
-    echo "$wallet_password" > "$wallet_password_file"
+    echo "$wallet_password" >"$wallet_password_file"
     chown bitcoin:bitcoin "$wallet_password_file"
     chmod 400 "$wallet_password_file"
 }
@@ -715,9 +715,9 @@ ask_install_lnd() {
         echo "Proceeding with Lightning (LND) installation..."
         sleep 1
         echo "Checking for and installing golang"
-        install_go  # Install Go if it's not already installed
-        install_lnd # Call the function to install LND
-        configure_lnd # Call the function to configure LND and create its data folder
+        install_go           # Install Go if it's not already installed
+        install_lnd          # Call the function to install LND
+        configure_lnd        # Call the function to configure LND and create its data folder
         prompt_create_wallet # Makes a wallet and adds the auto unlock file.
 
         echo "LND is now installed and configured."
@@ -777,7 +777,7 @@ configure_rtl() {
     rtl_folder="/home/bitcoin/node/RTL"
     rtl_config_file="$rtl_folder/RTL-Config.json"
 
-    cat <<EOF > "$rtl_config_file"
+    cat <<EOF >"$rtl_config_file"
         {
         "multiPass": "password",
         "port": "3000",
@@ -822,7 +822,7 @@ EOF
 
     # Create and start the systemd service for RTL
     rtl_systemd_file="/etc/systemd/system/rtl.service"
-    cat <<EOF > "$rtl_systemd_file"
+    cat <<EOF >"$rtl_systemd_file"
         [Unit]
         Description=Ride The Lightning (RTL) Bitcoin Lightning Network GUI
         After=bitcoind.service lnd.service
@@ -845,7 +845,7 @@ EOF
     echo "You can access RTL at http://localhost:8080 or http://$lan_address:8080"
 }
 
-# Final systems check and exit. 
+# Final systems check and exit.
 check_services() {
     echo "Checking if all required services are running..."
     if sudo systemctl is-active --quiet bitcoind && sudo systemctl is-active --quiet lnd && sudo systemctl is-active --quiet rtl; then
@@ -875,21 +875,23 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Welcome ASCII art
+# Welcom Message
 cat <<"EOF"
-!   .::::::.     ...     :::      .::.:::::::..     :::.     :::.    :::.    :::.    :::.    ...     :::::::-.  .,::::::      ::::::::::.   :::.       .,-:::::   :::  .   
-!  ;;;`    `  .;;;;;;;.  ';;,   ,;;;' ;;;;``;;;;    ;;`;;    `;;;;,  `;;;    `;;;;,  `;;; .;;;;;;;.   ;;,   `';,;;;;''''       `;;;```.;;;  ;;`;;    ,;;;'````'   ;;; .;;,.
-!  '[==/[[[[,,[[     \[[, \[[  .[[/    [[[,/[[['   ,[[ '[[,    [[[[[. '[[      [[[[[. '[[,[[     \[[, `[[     [[ [[cccc         `]]nnn]]'  ,[[ '[[,  [[[          [[[[[/'  
-!    '''    $$$$,     $$$  Y$c.$$"     $$$$$$c    c$$$cc$$$c   $$$ "Y$c$$      $$$ "Y$c$$$$$,     $$$  $$,    $$ $$""""          $$$""    c$$$cc$$$c $$$         _$$$$,    
-!   88b    dP"888,_ _,88P   Y88P       888b "88bo, 888   888,  888    Y88      888    Y88"888,_ _,88P  888_,o8P' 888oo,__        888o      888   888,`88bo,__,o, "888"88o, 
-!    "YMmMY"   "YMMMMMP"     MP        MMMM   "W"  YMM   ""`   MMM     YM      MMM     YM  "YMMMMMP"   MMMMP"`   """"YUMMM       YMMMb     YMM   ""`   "YUMMMMMP" MMM "MMP"
+    !   .::::::.     ...     :::      .::.:::::::..     :::.     :::.    :::.    :::.    :::.    ...     :::::::-.  .,::::::      ::::::::::.   :::.       .,-:::::   :::  .   
+    !  ;;;`    `  .;;;;;;;.  ';;,   ,;;;' ;;;;``;;;;    ;;`;;    `;;;;,  `;;;    `;;;;,  `;;; .;;;;;;;.   ;;,   `';,;;;;''''       `;;;```.;;;  ;;`;;    ,;;;'````'   ;;; .;;,.
+    !  '[==/[[[[,,[[     \[[, \[[  .[[/    [[[,/[[['   ,[[ '[[,    [[[[[. '[[      [[[[[. '[[,[[     \[[, `[[     [[ [[cccc         `]]nnn]]'  ,[[ '[[,  [[[          [[[[[/'  
+    !    '''    $$$$,     $$$  Y$c.$$"     $$$$$$c    c$$$cc$$$c   $$$ "Y$c$$      $$$ "Y$c$$$$$,     $$$  $$,    $$ $$""""          $$$""    c$$$cc$$$c $$$         _$$$$,    
+    !   88b    dP"888,_ _,88P   Y88P       888b "88bo, 888   888,  888    Y88      888    Y88"888,_ _,88P  888_,o8P' 888oo,__        888o      888   888,`88bo,__,o, "888"88o, 
+    !    "YMmMY"   "YMMMMMP"     MP        MMMM   "W"  YMM   ""`   MMM     YM      MMM     YM  "YMMMMMP"   MMMMP"`   """"YUMMM       YMMMb     YMM   ""`   "YUMMMMMP" MMM "MMP"
 EOF
-
 echo
 center_text "Thanks for using Enki's Bitcoin Core + lightning install script."
 center_text "This script will walk you through installing Bitcoin Core, LND, RTL, TOR, and I2P on your machine."
 center_text "To continue, hit any key."
-read -n 1 -s -r -p ""
+if [ -t 0 ]; then # Check if running in an interactive shell before using "read"
+    center_text "To continue, hit any key."
+    read -n 1 -s -r -p ""
+fi
 echo
 
 # Check if the user 'bitcoin' already exists
