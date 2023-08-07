@@ -2,7 +2,7 @@
 *.log
 
 # Ignore all files in a specific directory
-.vscode/
+.vscode
 
 # Ignore all .log and .tmp files anywhere in the repository
 **/*.log
