@@ -4,14 +4,6 @@
         {
             "type": "bashdb",
             "request": "launch",
-            "name": "Bash-Debug (hardcoded script name)",
-            "cwd": "${workspaceFolder}",
-            "program": "${workspaceFolder}/media/enki/Data/GitHub/SovranScripts/Sovran-Scripts/wrapper.sh",
-            "args": []
-        },
-        {
-            "type": "bashdb",
-            "request": "launch",
             "name": "Bash-Debug (simplest configuration)",
             "program": "${file}"
         }
