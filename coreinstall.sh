@@ -448,10 +448,10 @@ check_services() {
 # Main script starts here
 
 # Root Check
-#if [ "$EUID" -ne 0 ]; then
-#    echo "Please run this script as root."
-#    exit 1
-#fi
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run this script as root."
+    exit 1
+fi
 
 # Welcom Message
 cat <<"EOF"
