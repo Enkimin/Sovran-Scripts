@@ -14,7 +14,8 @@ then `sudo ./full_script_name.sh`. You'll need to provide an admin password.
 
 
 If you are running 'headless' and dont have Git installed yet you can run : 
-`wget https://github.com/Enkimin/Sovran-Scripts/archive/main.tar.gz` > 
+
+`wget https://github.com/Enkimin/Sovran-Scripts/archive/main.tar.gz` >
 then run `tar -xzvf main.tar.gz` > and `cd main` > `ls` > `sudo ./full_script_name.sh`
 
 
