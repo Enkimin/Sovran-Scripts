@@ -1,18 +1,16 @@
 #!/bin/bash
 #This is a script to install Bitcoin Core
-#Global Functions.
-log_file="install_log.txt"
-exec > >(tee -a "$log_file") 2>&1
 
-# Install Check.
+#Global Functions.
 is_package_installed() {
     if dpkg -l "$1" 2>/dev/null | grep -q "^ii"; then
+        echo "$1 is installed."
         return 0 # Package is installed
     else
+        echo "$1 is not installed."
         return 1 # Package is not installed
     fi
 }
-# yes/no Prompt
 prompt_yes_no() {
     local question="$1"
     local default_choice="${2:-yes}"
@@ -38,14 +36,6 @@ prompt_yes_no() {
             ;;
         esac
     done
-}
-# Center text
-center_text() {
-    local text="$1"
-    local terminal_width=${COLUMNS:-$(tput cols 2>/dev/null) 80} # Use COLUMNS or tput (with fallback)
-    local text_width=${#text}
-    local padding=$(((terminal_width - text_width) / 2))
-    printf "%*s%s%*s\n" $padding "" "$text" $padding ""
 }
 
 # Network stuff
@@ -78,21 +68,21 @@ install_tor() {
 
             echo "Updating package lists with the new repository..."
             sleep 1
-            if ! apt update; then
+            if ! apt-get update; then
                 echo "Failed to update package lists with the new repository." >&2
                 exit 1
             fi
 
             echo "Installing TOR..."
             sleep 1
-            if ! apt install -y tor; then
+            if ! apt-get install -y tor; then
                 echo "Failed to install TOR." >&2
                 exit 1
             fi
 
             echo "Installing additional dependencies for TOR..."
             sleep 1
-            if ! apt install -y torsocks tor-geoipdb; then
+            if ! apt-get install -y torsocks tor-geoipdb; then
                 echo "Failed to install additional dependencies for TOR." >&2
                 exit 1
             fi
@@ -134,11 +124,7 @@ install_i2p() {
         return
     fi
 
-    # Inform the user about I2P and its installation
-    echo "Getting ready to install I2P....."
-    sleep 1
-
-    # Confirm I2P installation
+ # Confirm I2P installation
     if [ "$(prompt_yes_no 'Do you want to install I2P?')" == "yes" ]; then
         echo "Adding I2P repository..."
         wget -q -O - https://repo.i2pd.xyz/.help/add_repo | sudo bash -s -
@@ -149,7 +135,7 @@ install_i2p() {
 
         if ! is_package_installed "apt-transport-https"; then
             echo "Installing apt-transport-https..."
-            if ! apt install -y apt-transport-https; then
+            if ! apt-get install -y apt-transport-https; then
                 echo "Failed to install apt-transport-https." >&2
                 exit 1
             fi
@@ -158,15 +144,21 @@ install_i2p() {
         fi
 
         echo "Updating package lists with the new repository..."
-        if ! apt update; then
+        if ! apt-get update; then
             echo "Failed to update package lists with the new repository." >&2
             exit 1
         fi
 
         echo "Installing I2P..."
         sleep 1
-        if ! apt install -y i2p; then
+        if ! apt-get install -y i2p; then
             echo "Failed to install I2P." >&2
+            exit 1
+        fi
+
+            echo "Enabling the I2P service to start on boot..."
+        if ! systemctl enable i2p; then
+            echo "Failed to enable the I2P service to start on boot." >&2
             exit 1
         fi
 
@@ -176,7 +168,7 @@ install_i2p() {
             exit 1
         fi
 
-        echo "I2P has been installed. Moving on..."
+        echo "I2P has been installed and configured to start on boot. Moving on..."
         sleep 1
     else
         echo "I2P installation skipped. Moving on..."
@@ -192,21 +184,29 @@ install_bitcoin_core_dependencies() {
     sleep 1
     if ! is_package_installed "git"; then
         echo "Installing git..."
-        if ! apt install -y git; then
+        if ! apt-get install -y git; then
             echo "Failed to install git." >&2
             exit 1
         fi
     else
         echo "git is already installed."
     fi
+    if ! is_package_installed "curl"; then
+        echo "Installing curl..."
+        if ! apt-get install -y curl; then
+            echo "Failed to install curl." >&2
+            exit 1
+        fi
+    else
+        echo "curl is already installed."
+    fi
 
     local bitcoin_core_dependencies=("build-essential" "libtool" "autotools-dev" "automake" "pkg-config" "bsdmainutils" "python3" "libssl-dev" "libevent-dev" "libboost-system-dev" "libboost-filesystem-dev" "libboost-test-dev" "libboost-thread-dev" "libboost-all-dev" "libzmq3-dev")
-
     # Iterate through the dependencies and install them
     for dep in "${bitcoin_core_dependencies[@]}"; do
         if ! is_package_installed "$dep"; then
             echo "Installing $dep..."
-            if ! apt install -y "$dep"; then
+            if ! apt-get install -y "$dep"; then
                 echo "Failed to install $dep." >&2
                 exit 1
             fi
@@ -218,7 +218,7 @@ install_bitcoin_core_dependencies() {
     echo "Bitcoin Core dependencies have been successfully installed."
 }
 
-# Download's and installs Bitcoin Core
+# Download and install Bitcoin Core
 download_and_install_bitcoin_core() {
     local node_folder="/home/bitcoin/node"
 
@@ -230,22 +230,42 @@ download_and_install_bitcoin_core() {
     # Fetch the latest version number from the GitHub API
     echo "Fetching the latest version of Bitcoin Core..."
     sleep 1
-    latest_version=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+    latest_version=$(curl -s https://api.github.com/repos/bitcoin/bitcoin/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+
     if [[ -z "$latest_version" ]]; then
         echo "Failed to fetch the latest version of Bitcoin Core. Aborting the installation." >&2
         exit 1
     fi
 
-    # Clone the Bitcoin Core repository from GitHub
-    echo "Cloning Bitcoin Core repository..."
+    # Download the Bitcoin Core source code as a .tar.gz file
+    echo "Downloading Bitcoin Core source code..."
     sleep 1
-    if ! git clone --depth 1 --branch "$latest_version" https://github.com/bitcoin/bitcoin.git "$node_folder/bitcoin-$latest_version"; then
-        echo "Failed to clone the Bitcoin Core repository. Aborting the installation." >&2
+    local bitcoin_core_url="https://bitcoincore.org/bin/bitcoin-core-${latest_version}/bitcoin-${latest_version}.tar.gz"
+    local source_code_archive="${node_folder}/bitcoin-$latest_version.tar.gz"
+
+    if ! wget -nc -q "$bitcoin_core_url" -P "$node_folder"; then
+        echo "ERROR: Failed to download the Bitcoin Core source code." >&2
         exit 1
     fi
 
-    # Call verify_checksum function after cloning the Bitcoin Core repository
-    verify_checksum "$node_folder" "$latest_version"
+    # Download the SHA256SUMS file
+    echo "Downloading Bitcoin Core SHA256SUMS file..."
+    sleep 1
+    local sha256sums_url="https://bitcoincore.org/bin/bitcoin-core-$latest_version/SHA256SUMS"
+    local sha256sums_file="${node_folder}/SHA256SUMS"
+
+    if ! wget -nc -q "$sha256sums_url" -O "$sha256sums_file"; then
+        echo "ERROR: Failed to download the SHA256SUMS file." >&2
+        exit 1
+    fi
+
+    # Verify the cryptographic checksum of the downloaded .tar.gz file
+    verify_checksum "$source_code_archive" "$latest_version"
+
+    # Extract the downloaded source code
+    echo "Extracting Bitcoin Core source code..."
+    sleep 1
+    tar -xzvf "$source_code_archive" -C "$node_folder"
 
     # Navigate into the Bitcoin Core directory
     echo "Entering the Bitcoin Core directory..."
@@ -272,53 +292,31 @@ download_and_install_bitcoin_core() {
     sleep 1
 }
 
-# Verifys cryptographic checksum of Bitcoin Core source code (Gets called in the install) 
+# Verifies the cryptographic checksum of a file
 verify_checksum() {
-    local node_folder="$1"
-    local latest_version="$2"
-    local checksum_file="${node_folder}/bitcoin-${latest_version}/SHA256SUMS.asc"
-    local bitcoin_core_url="https://bitcoincore.org/bin/bitcoin-core-${latest_version}/SHA256SUMS.asc"
-    local gpg_key="0x01EA5486DE18A882D4C2684590C8019E36C2E964"
-    echo "Downloading Bitcoin Core signature file..."
-    sleep 1
-    if ! wget -q "$bitcoin_core_url" -P "$node_folder"; then
-        echo "ERROR: Failed to download the Bitcoin Core signature file." >&2
-        exit 1
-    fi
+    local file="$1"
+    local expected_checksum="$2"
+    local current_dir="$(pwd)"  # Store the current directory
 
-    if ! gpg --list-keys "$gpg_key" &>/dev/null; then
-        echo "Importing Bitcoin Core developers' signing key..."
-        sleep 1
-        if ! gpg --recv-keys "$gpg_key"; then
-            echo "ERROR: Failed to import the Bitcoin Core developers' signing key." >&2
-            exit 1
-        fi
+    # Change directory to the folder where the file is located
+    local file_dir="$(dirname "$file")"
+    cd "$file_dir"
+
+    # Download the SHA256SUMS file without renaming
+    echo "Verifying the cryptographic checksum..."
+    sleep 1
+
+    if sha256sum --ignore-missing --check SHA256SUMS; then
+        echo "Cryptographic checksum verification successful!"
     else
-        echo "Bitcoin Core developers' signing key is already imported."
-    fi
-
-    echo "Verifying the signature of the SHA256SUMS.asc file..."
-    sleep 1
-    if ! gpg --verify "${checksum_file}"; then
-        echo "ERROR: Signature verification of SHA256SUMS.asc failed." >&2
-        exit 1
-    else
-        echo "Signature verification successful!"
-    fi
-    echo "Verifying the cryptographic checksum of the Bitcoin Core source code..."
-    sleep 1
-    if ! cd "${node_folder}/bitcoin-${latest_version}"; then
-        echo "ERROR: Failed to navigate to the Bitcoin Core source code directory." >&2
-        exit 1
-    fi
-
-    if ! sha256sum -c --ignore-missing "${checksum_file}"; then
         echo "ERROR: Cryptographic checksum verification failed." >&2
         exit 1
-    else
-        echo "Cryptographic checksum verification successful!"
     fi
+
+    # Return to the original directory
+    cd "$current_dir"
 }
+
 
 # Copies Core's binary to /usr/local/bin and checks permissions
 copy_bitcoin_core_binary() {
@@ -511,8 +509,8 @@ EOF
 
 # Starts and enables Bitcoin Core
 start_and_enable_bitcoin_core() {
-    systemctl start bitcoind
     systemctl enable bitcoind
+    systemctl start bitcoind
     echo "Bitcoin Core has been started and added to systemd. This allows Core to start at boot."
 }
 
@@ -533,28 +531,30 @@ check_services() {
 
 # Root Check
 if [ "$EUID" -ne 0 ]; then
-    echo "Please run this script as root."
+    echo "Please run this script as root. Run wih sudo or use 'su' log into your admin account."
     exit 1
 fi
 
-# Welcom Message
+# Welcome Message
 cat <<"EOF"
-    !   .::::::.     ...     :::      .::.:::::::..     :::.     :::.    :::.    :::.    :::.    ...     :::::::-.  .,::::::      ::::::::::.   :::.       .,-:::::   :::  .   
-    !  ;;;`    `  .;;;;;;;.  ';;,   ,;;;' ;;;;``;;;;    ;;`;;    `;;;;,  `;;;    `;;;;,  `;;; .;;;;;;;.   ;;,   `';,;;;;''''       `;;;```.;;;  ;;`;;    ,;;;'````'   ;;; .;;,.
-    !  '[==/[[[[,,[[     \[[, \[[  .[[/    [[[,/[[['   ,[[ '[[,    [[[[[. '[[      [[[[[. '[[,[[     \[[, `[[     [[ [[cccc         `]]nnn]]'  ,[[ '[[,  [[[          [[[[[/'  
-    !    '''    $$$$,     $$$  Y$c.$$"     $$$$$$c    c$$$cc$$$c   $$$ "Y$c$$      $$$ "Y$c$$$$$,     $$$  $$,    $$ $$""""          $$$""    c$$$cc$$$c $$$         _$$$$,    
-    !   88b    dP"888,_ _,88P   Y88P       888b "88bo, 888   888,  888    Y88      888    Y88"888,_ _,88P  888_,o8P' 888oo,__        888o      888   888,`88bo,__,o, "888"88o, 
-    !    "YMmMY"   "YMMMMMP"     MP        MMMM   "W"  YMM   ""`   MMM     YM      MMM     YM  "YMMMMMP"   MMMMP"`   """"YUMMM       YMMMb     YMM   ""`   "YUMMMMMP" MMM "MMP"
+!   .::::::.     ...     :::      .::.:::::::..     :::.     :::.    :::.    :::.    :::.    ...     :::::::-.  .,::::::      ::::::::::.   :::.       .,-:::::   :::  .   
+!  ;;;`    `  .;;;;;;;.  ';;,   ,;;;' ;;;;``;;;;    ;;`;;    `;;;;,  `;;;    `;;;;,  `;;; .;;;;;;;.   ;;,   `';,;;;;''''       `;;;```.;;;  ;;`;;    ,;;;'````'   ;;; .;;,.
+!  '[==/[[[[,,[[     \[[, \[[  .[[/    [[[,/[[['   ,[[ '[[,    [[[[[. '[[      [[[[[. '[[,[[     \[[, `[[     [[ [[cccc         `]]nnn]]'  ,[[ '[[,  [[[          [[[[[/'  
+!    '''    $$$$,     $$$  Y$c.$$"     $$$$$$c    c$$$cc$$$c   $$$ "Y$c$$      $$$ "Y$c$$$$$,     $$$  $$,    $$ $$""""          $$$""    c$$$cc$$$c $$$         _$$$$,    
+!   88b    dP"888,_ _,88P   Y88P       888b "88bo, 888   888,  888    Y88      888    Y88"888,_ _,88P  888_,o8P' 888oo,__        888o      888   888,`88bo,__,o, "888"88o, 
+!    "YMmMY"   "YMMMMMP"     MP        MMMM   "W"  YMM   ""`   MMM     YM      MMM     YM  "YMMMMMP"   MMMMP"`   """"YUMMM       YMMMb     YMM   ""`   "YUMMMMMP" MMM "MMP"
 EOF
-echo
-center_text "Thanks for using Enki's Bitcoin Core script"
-center_text "This script will walk you through installing TOR, I2P and Bitcoin Core on your box."
-center_text "To continue, hit any key."
-if [ -t 0 ]; then # Check if running in an interactive shell before using "read"
-    center_text "To continue, hit any key."
+
+echo "Thanks for using Enki's Bitcoin Core script"
+echo  "This script will walk you through installing TOR, I2P and Bitcoin Core on your box."
+if [ -t 0 ]; then 
+    echo "To continue, hit any key."
     read -n 1 -s -r -p ""
 fi
-echo
+
+echo "Making a log file incase if errors" 
+log_file="core_install_log.txt"
+exec > >(tee -a "$log_file") 2>&1
 
 # Check if the user bitcoin already exists and make it if not. 
 if id "bitcoin" &>/dev/null; then
@@ -605,19 +605,8 @@ if [ ! -d "$bitcoin_home" ]; then
     fi
 fi
 
-# Prompt the user if they want to install TOR
-if [ "$(prompt_yes_no 'Do you want to install TOR?')" == "yes" ]; then
-    install_tor
-else
-    echo "TOR installation skipped."
-fi
-
-# Prompt the user if they want to install I2P
-if [ "$(prompt_yes_no 'Do you want to install I2P?')" == "yes" ]; then
-    install_i2p
-else
-    echo "I2P installation skipped. Moving on..."
-fi
+install_tor
+install_i2p
 
 # Determine if TOR and I2P are installed and set the variables accordingly
 use_tor="no"
@@ -717,7 +706,7 @@ start_and_enable_bitcoin_core
 check_services # Final systems check and exit
 
 # Inform the user that the script has completed successfully
-center_text "Thanks for using my script and thank YOU for running a Bitcoin full node you're helping to decentralize the network even further!"
+echo "Thanks for using my script and thank YOU for running a Bitcoin full node you're helping to decentralize the network even further!"
 
 # Exit the script with a success status code
 exit 0
